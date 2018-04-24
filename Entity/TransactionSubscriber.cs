@@ -38,6 +38,7 @@ namespace DataChain.EntityFramework
                   result +=  data.Value.ToString();
                 }
 
+                
                 TransactionModel model = new TransactionModel();
                 model.TransactionHash = Serializer.ComputeHash( result.ToHexString());
                 model.RawData = HexString.Parse(result).ToByteArray();
