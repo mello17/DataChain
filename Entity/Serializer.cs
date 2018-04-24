@@ -89,13 +89,15 @@ namespace DataChain.EntityFramework
                 {
                     var recordName = model[i].Name;
                     var recordValue = model[i].Value;
+                    var recordKey = model[i].
                     var recordId = model[i].Instance;
 
                     rec.Add(new Record()
                     {
                         Id = recordId,
                         Value = new HexString(recordValue),
-                        Key = recordName
+                        Name = recordName,
+
                     });
 
                 }

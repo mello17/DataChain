@@ -39,16 +39,18 @@ namespace DataChain.EntityFramework
                 }
 
                 
-                TransactionModel model = new TransactionModel();
+                var model = new TransactionModel();
                 model.TransactionHash = Serializer.ComputeHash( result.ToHexString());
-                model.RawData = HexString.Parse(result).ToByteArray();
+                model.RawData =new HexString(result.ToHexString()).ToByteArray();
                 model.Timestamp = tx.TimeStamp;
                 tx_list.Add(model);
             }
 
+            
             db.Transactions.AddRange(tx_list);
             await db.SaveChangesAsync();
         }
+
         [global::System.Diagnostics.Contracts.ContractRuntimeIgnored]
         public async Task<Transaction> GetTransactionAsync(uint index)
         {

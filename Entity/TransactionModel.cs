@@ -15,7 +15,7 @@ namespace DataChain.EntityFramework
         [Index]
         public byte[] TransactionHash { get; set; }
 
-        [ConcurrencyCheck]
+        [ConcurrencyCheck] 
         [Required]
         public string Timestamp { get; set; }
 

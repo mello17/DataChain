@@ -17,12 +17,15 @@ namespace DataChain.EntityFramework
         public int Instance { get; set; }
 
         [ConcurrencyCheck]
-        [Required]
         public byte[] Value { get; set; }
 
         [ConcurrencyCheck]
         [Required]
         public string Name { get; set; }
+
+        [ConcurrencyCheck]
+        [Required]
+        public byte[] Key { get; set; }
 
         public int? TransactionId { get; set; }
         public virtual TransactionModel TransactionModel { get; set; }
