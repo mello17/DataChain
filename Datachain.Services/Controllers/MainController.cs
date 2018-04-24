@@ -46,20 +46,7 @@ namespace DataChain.Services.Controllers
         [Route("record")]
         public async Task<JsonResult<Record>> GetRecord([FromUri] string key)
         {
-            HexString parseKey = HexString.Empty;
-
-            try
-            {
-                parseKey = HexString.Parse(key ?? "");
-            }
-            catch
-            {
-                throw new HttpResponseException(new System.Net.Http.HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.BadRequest,
-                    ReasonPhrase = "Key is not valid"
-                });
-            }
+           HexString parseKey = KeyParser(key);
 
             Record result = (await recSubscribe.GetRecordsByValueAsync(parseKey));
 
@@ -73,8 +60,40 @@ namespace DataChain.Services.Controllers
 
         [Route("commit")]
         [HttpPost]
-        public Task PostTransaction([FromUri]string key, [FromUri]string  trans)
+        public Task PostTransaction([FromBody]string key,
+                                    [FromBody]string sign, 
+                                    [FromBody]string  trans)
         {
+
+            if(key == String.Empty || sign == String.Empty)
+            {
+                CreateErrorResponse(HttpStatusCode.BadRequest, "Authentication failed");
+            }
+           // IList<Signature> auth = new List<Signature>();
+
+            HexString parseKey = KeyParser(key);
+            JObject bodyContent;
+            try
+            {
+                 bodyContent = JObject.Parse(trans);
+            }
+
+            catch (JsonReaderException)
+            {
+                CreateErrorResponse(HttpStatusCode.BadRequest, "Bad json");
+            }
+
+            Signature auth = new Signature(HexString.Parse(sign), HexString.Parse(key));
+
+            try
+            {
+                auth.VerifyMessage((string)bodyContent["record"]);
+            }
+
+
+
+
+           
 
             return;
         }
@@ -99,11 +118,7 @@ namespace DataChain.Services.Controllers
 
             if (tx == null)
             {
-                throw new HttpResponseException(new System.Net.Http.HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.NotFound,
-                    ReasonPhrase = "Transaction not found"
-                });
+                CreateErrorResponse(HttpStatusCode.BadRequest, "Transaction is not found");
             }
 
             var response = new Transaction(tx.Instance,tx.TimeStamp, tx.Data, tx.Hash);
@@ -120,18 +135,15 @@ namespace DataChain.Services.Controllers
 
         if(tx == null)
         {
-                throw new HttpResponseException(new System.Net.Http.HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.NotFound,
-                    ReasonPhrase = "Transaction not found"
-                });
-        }
+                CreateErrorResponse(HttpStatusCode.BadRequest, "Transaction is not found");
+            }
 
             var response = new Transaction(tx.Instance, tx.TimeStamp, tx.Data, tx.Hash);
 
             return Json(response);
         }
 
+        #region Вспомогательные методы
         private object GetRecordJson(Record records)
         {
             return new
@@ -140,5 +152,31 @@ namespace DataChain.Services.Controllers
                 value  = records.Value
             };
         }
+
+        private void CreateErrorResponse(HttpStatusCode code,string reason)
+        {
+            throw new HttpResponseException(new System.Net.Http.HttpResponseMessage
+            {
+                StatusCode = code,
+                ReasonPhrase = reason
+            });
+        }
+
+        private HexString KeyParser(string key)
+        {
+            HexString parseKey = HexString.Empty;
+
+            try
+            {
+                parseKey = HexString.Parse(key ?? "");
+            }
+            catch
+            {
+                CreateErrorResponse(HttpStatusCode.BadRequest, "Key is not valid");
+            }
+
+            return parseKey;
+        }
+        #endregion
     }
 }

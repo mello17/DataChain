@@ -20,7 +20,7 @@ namespace DataChain.Infrastructures
             this.PublicKey = _publicKey;
         }
 
-        private static bool VerifyMessage(string originalData, string signedDataBase64, string publicKey)
+        public  bool VerifyMessage(string originalData, string signedDataBase64, string publicKey)
         {
             bool verified;
 
@@ -28,9 +28,7 @@ namespace DataChain.Infrastructures
 
             rsa.FromXmlString(publicKey);
   
-           var originalByteData = Encoding.UTF8.GetBytes(originalData);
-
-            // Конвертация подписи из string в кодировке Base64 в массив байт
+            var originalByteData = Encoding.UTF8.GetBytes(originalData);
             var signedData = Convert.FromBase64String(signedDataBase64);
 
             verified = rsa.VerifyData(originalByteData, CryptoConfig.MapNameToOID("SHA256"), signedData);
