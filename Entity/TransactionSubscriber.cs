@@ -48,6 +48,7 @@ namespace DataChain.EntityFramework
             db.Transactions.AddRange(tx_list);
             await db.SaveChangesAsync();
         }
+
         [global::System.Diagnostics.Contracts.ContractRuntimeIgnored]
         public async Task<Transaction> GetTransactionAsync(uint index)
         {
