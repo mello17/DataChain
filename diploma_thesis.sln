@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26403.7
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataChain", "DataChain\DataChain.csproj", "{A26E47C2-7C56-4A21-8CB7-3353082D5976}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataChain.DataLayer", "DataChain.DataLayer\DataChain.DataLayer.csproj", "{4862C13F-553C-44BA-8510-165176305C8D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataChain.Infrastructures", "DataChain.Infrastructures\DataChain.Infrastructures.csproj", "{1B651505-6099-4A1C-AAE9-7AFB207AD6B4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Datachain.Services", "Datachain.Services\Datachain.Services.csproj", "{827A5ABC-0ED8-4E72-92F0-F48CD4556633}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Datachain.Services.Tests", "Datachain.Services.Tests\Datachain.Services.Tests.csproj", "{A5116234-199A-4CF7-B9E0-574D463DCADD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataChain.EntityFramework", "Entity\DataChain.EntityFramework.csproj", "{31733A4F-9906-4FAC-B561-C0A776205227}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A26E47C2-7C56-4A21-8CB7-3353082D5976}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A26E47C2-7C56-4A21-8CB7-3353082D5976}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A26E47C2-7C56-4A21-8CB7-3353082D5976}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A26E47C2-7C56-4A21-8CB7-3353082D5976}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4862C13F-553C-44BA-8510-165176305C8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4862C13F-553C-44BA-8510-165176305C8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4862C13F-553C-44BA-8510-165176305C8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4862C13F-553C-44BA-8510-165176305C8D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B651505-6099-4A1C-AAE9-7AFB207AD6B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B651505-6099-4A1C-AAE9-7AFB207AD6B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B651505-6099-4A1C-AAE9-7AFB207AD6B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B651505-6099-4A1C-AAE9-7AFB207AD6B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{827A5ABC-0ED8-4E72-92F0-F48CD4556633}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{827A5ABC-0ED8-4E72-92F0-F48CD4556633}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{827A5ABC-0ED8-4E72-92F0-F48CD4556633}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{827A5ABC-0ED8-4E72-92F0-F48CD4556633}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5116234-199A-4CF7-B9E0-574D463DCADD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5116234-199A-4CF7-B9E0-574D463DCADD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5116234-199A-4CF7-B9E0-574D463DCADD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5116234-199A-4CF7-B9E0-574D463DCADD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31733A4F-9906-4FAC-B561-C0A776205227}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31733A4F-9906-4FAC-B561-C0A776205227}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31733A4F-9906-4FAC-B561-C0A776205227}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31733A4F-9906-4FAC-B561-C0A776205227}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
