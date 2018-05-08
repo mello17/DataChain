@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DataChain.Infrastructures;
 using DataChain.DataLayer;
 using DataChain.DataLayer.Interfaces;
+using System.Data.Entity;
 
 namespace DataChain.EntityFramework
 {
@@ -13,10 +13,15 @@ namespace DataChain.EntityFramework
     {
         private DatachainContext db = new DatachainContext();
 
+
+        public void Init()
+        {
+            Database.SetInitializer(new MigrationInitializer());
+        }
         public async Task<Block> GetBlock(uint id)
         {
             var block = await db.Blocks.FindAsync(id);
-
+            
             if (block == null)
             {
                 throw new InvalidBlockException($"Block with id  {id} can not find");
@@ -24,7 +29,21 @@ namespace DataChain.EntityFramework
 
             var response =  Serializer.DeserializeBlock(block);
 
-            return response;
+            return await Task.FromResult(response);
+        }
+
+        public async  Task<Block> GetBlock(HexString hash)
+        {
+            var block =   db.Blocks.Where(b=> b.BlockHash == hash.ToByteArray()).SingleOrDefault();
+
+            if (block == null)
+            {
+                throw new InvalidBlockException($"Block with hash  {hash} can not find");
+            }
+
+            var response = Serializer.DeserializeBlock(block);
+
+            return await Task.FromResult(response);
         }
 
         public async Task<Block> GetLatestBlock()

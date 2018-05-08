@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 
@@ -13,15 +14,25 @@ namespace DataChain.EntityFramework
         [ConcurrencyCheck]
         [Required]
         [Index]
+        [MaxLength(1024)]
         public byte[] TransactionHash { get; set; }
 
         [ConcurrencyCheck] 
         [Required]
-        public string Timestamp { get; set; }
+        public DateTime Timestamp { get; set; }
 
         [ConcurrencyCheck]
         [Required]
         public byte[] RawData { get; set; }
+
+        [ConcurrencyCheck]
+        [Required]
+        [Index]
+        [MaxLength(1024)]
+        public byte[] Signature { get; set; }
+
+        public virtual int?  BlockModelId { get; set; }
+        public virtual BlockModel BlockModel { get; set; }
 
         public virtual ICollection<RecordModel> Records { get; set; }
 

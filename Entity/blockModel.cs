@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 
@@ -7,20 +8,21 @@ namespace DataChain.EntityFramework
    public class BlockModel
     {
         [Key]
-        public int Id { get; set; }
+        public int Id { get; private set; }
 
         [ConcurrencyCheck]
         [Required]
         [Index]
-        public byte[] BlockHash { get; set; }
+        [MaxLength(1024)]
+        public byte[] BlockHash { get; private set; }
 
         [ConcurrencyCheck]
         [Required]
-        public byte[] PreviousHash { get; set; }
+        public byte[] PreviousHash { get; private set; }
 
         [ConcurrencyCheck]
         [Required]
-        public string Timestamp { get; set; }
+        public DateTime Timestamp { get; private set; }
 
         public virtual ICollection<TransactionModel> Transactions { get; set; }
 

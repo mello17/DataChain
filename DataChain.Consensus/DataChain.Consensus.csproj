@@ -4,12 +4,12 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{31733A4F-9906-4FAC-B561-C0A776205227}</ProjectGuid>
+    <ProjectGuid>{D8DF4D67-D28C-45E6-81CA-342F78624FB2}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Entity</RootNamespace>
-    <AssemblyName>Entity</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <RootNamespace>DataChain.Consensus</RootNamespace>
+    <AssemblyName>DataChain.Consensus</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -30,14 +30,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
-    </Reference>
-    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
-    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -47,29 +40,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="blockModel.cs" />
-    <Compile Include="BlockSubscriber.cs" />
-    <Compile Include="DatachainContext.cs" />
-    <Compile Include="InvalidBlockException.cs" />
-    <Compile Include="InvalidTransactionException.cs" />
-    <Compile Include="MigrationInitializer.cs" />
-    <Compile Include="Migrations\Configuration.cs" />
+    <Compile Include="ConsensusBft.cs" />
+    <Compile Include="Event.cs" />
+    <Compile Include="EventType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RecordModel.cs" />
-    <Compile Include="RecordSubscriber.cs" />
-    <Compile Include="Serializer.cs" />
-    <Compile Include="TransactionModel.cs" />
-    <Compile Include="TransactionSubscriber.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\DataChain.DataLayer\DataChain.DataLayer.csproj">
-      <Project>{4862c13f-553c-44ba-8510-165176305c8d}</Project>
-      <Name>DataChain.DataLayer</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-    <None Include="packages.config" />
+    <Compile Include="Status.cs" />
+    <Compile Include="Vote.cs" />
+    <Compile Include="VoteSet.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

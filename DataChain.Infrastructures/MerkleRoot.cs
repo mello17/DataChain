@@ -23,12 +23,13 @@ namespace DataChain.Infrastructures
       
         public static HexString GetMerkleRoot( BlockMetadata data, int countTransactions)
         {
+            var tempCount = countTransactions;
 
-            for (int i = 0; i <= countTransactions; i += 2)
+            for (int i = 0; i <= tempCount; i += 2)
                 {
 
                 level++;
-                if (i + 1 < countTransactions)
+                if (i + 1 < tempCount)
                 {
                     if (level == 1 )
                     {
@@ -44,17 +45,17 @@ namespace DataChain.Infrastructures
                
                 }
 
-            if (countTransactions % 2 == 1)
+            if (tempCount % 2 == 1)
             {
 
                 merkleList.Insert(merkleList.Count ,
                     new HexString(ComputeHashData(data.CurrentTransactions[countTransactions - 1].Hash,
                                                    data.CurrentTransactions[countTransactions - 1].Hash)));
-                countTransactions += 1;
+                tempCount += 1;
             }
-            if ((countTransactions /2) != 1)
+            if ((tempCount / 2) != 1)
             {
-                GetMerkleRoot(data, countTransactions / 2);
+                GetMerkleRoot(data, tempCount / 2);
             }
             var root = merkleList[merkleList.Count - 1];
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using DataChain.DataLayer;
@@ -27,6 +28,15 @@ namespace DataChain.EntityFramework
 
         }
 
+        public static Signature DecodeSignature(byte[] sign) => throw new NotImplementedException();
+
+        public static Transaction TransactionDecode(HexString rawTransaction)
+        {
+            // var byteData = rawTransaction.ToByteArray();
+            throw new NotImplementedException();
+
+        }
+
         public static byte[] ToHexString(this string rawString)
         {
             byte[] bytes = new byte[rawString.Length];
@@ -46,13 +56,25 @@ namespace DataChain.EntityFramework
 
             return hash;
         }
+       
 
         public static Transaction DeserializeTransaction(TransactionModel model)
         {
-            return new Transaction(model.Id,
+            return new Transaction(
                 model.Timestamp,
                 RecordsMapping((IList<RecordModel>)model.Records),
-                new HexString(model.TransactionHash));
+                new HexString(model.TransactionHash), 
+                new HexString(model.Signature));
+        }
+
+        public static Record DeserializeRecord(RecordModel model)
+        {
+            return new Record()
+            {
+                Version = model.Id,
+                Value = new HexString(model.Value),
+                Name = model.Name
+            };
         }
 
         public static Block DeserializeBlock(BlockModel model)
@@ -64,6 +86,21 @@ namespace DataChain.EntityFramework
                              ComputeMetadata()
                              );
         }
+
+        public static string ConcatenateData(IList<string> list_data)
+        {
+            string result = null;
+
+            for (int i= 0; i< list_data.Count(); i++)
+            {
+
+                result += list_data[i];
+            }
+
+            return result;
+        }
+
+        public static byte[] ToBinaryArray(string str) => UTF8Encoding.UTF8.GetBytes(str);
 
         public static BlockMetadata ComputeMetadata()
         {
@@ -87,16 +124,12 @@ namespace DataChain.EntityFramework
 
                 for (int i = 0; i <= model.Count(); i++)
                 {
-                    var recordName = model[i].Name;
-                    var recordValue = model[i].Value;
-                    var recordKey = model[i].
-                    var recordId = model[i].Instance;
 
                     rec.Add(new Record()
                     {
-                        Id = recordId,
-                        Value = new HexString(recordValue),
-                        Name = recordName,
+                        Version = model[i].Id,
+                        Value = new HexString(model[i].Value),
+                        Name = model[i].Name,
 
                     });
 

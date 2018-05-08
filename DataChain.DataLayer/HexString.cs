@@ -44,18 +44,6 @@ namespace DataChain.DataLayer
             return new HexString(result);
         }
 
-       
-
-        //public static HexString ParseListValue(  List<byte[]> hex, char separator)
-        //{
-        //    StringBuilder sBuilder = new StringBuilder();
-
-        //    foreach (var obj in hex)
-        //    {
-
-        //    }
-        //}
-
         private static int GetHexValue(char hex)
         {
             int value = "0123456789ABCDEF".IndexOf(char.ToUpper(hex));

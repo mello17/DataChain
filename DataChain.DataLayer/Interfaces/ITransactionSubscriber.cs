@@ -8,7 +8,7 @@ namespace DataChain.DataLayer.Interfaces
 {
     public interface ITransactionSubscriber
     {
-        Task AddTransactionAsync(IEnumerable<Transaction> transaction);
+        Task<byte[]> AddTransactionAsync(IEnumerable<Transaction> transaction);
         Task<Transaction> GetLastTransactionAsync();
         Task<Transaction> GetTransactionAsync(uint id);
        

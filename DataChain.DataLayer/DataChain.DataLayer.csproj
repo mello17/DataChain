@@ -59,8 +59,10 @@
     <Compile Include="Interfaces\IRecordSubscriber.cs" />
     <Compile Include="Interfaces\ITransactionSubscriber.cs" />
     <Compile Include="Record.cs" />
+    <Compile Include="Signature.cs" />
     <Compile Include="Transaction.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="User.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

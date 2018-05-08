@@ -60,26 +60,31 @@ namespace Datachain.Services.Tests.Controllers
         // [TestCleanup()]
         // public void MyTestCleanup() { }
         //
+        [TestInitialize]
+        public void InitTransactions()
+        {
+
+        }
         #endregion
-       
+
         [TestMethod]
-        public void TestMethod1()
+        public void TestMerkleRoot()
         {
             SHA256 hasher = SHA256.Create();
             byte[] data= new HexString(HexString.Parse("abc21321412123131312").ToByteArray()).ToByteArray();
             byte[] data2 = new HexString(HexString.Parse("f213412431313131").ToByteArray()).ToByteArray();
-            Transaction tx = new Transaction(1,DateTime.UtcNow.ToString(), null,new HexString(Serializer.ComputeHash(data)));
-            Transaction tx2 = new Transaction(2, DateTime.UtcNow.ToString(), null, new HexString(Serializer.ComputeHash(data2)));
-            Transaction tx3 = new Transaction(2, DateTime.UtcNow.ToString(), null, new HexString(Serializer.ComputeHash(data2)));
-            Transaction tx4 = new Transaction(2, DateTime.UtcNow.ToString(), null, new HexString(Serializer.ComputeHash(data2)));
-            Transaction tx5 = new Transaction(2, DateTime.UtcNow.ToString(), null, new HexString(Serializer.ComputeHash(data2)));
+            Transaction tx = new Transaction(DateTime.UtcNow, null,new HexString(Serializer.ComputeHash(data)), HexString.Empty);
+            Transaction tx2 = new Transaction( DateTime.UtcNow, null, new HexString(Serializer.ComputeHash(data2)), HexString.Empty);
+            Transaction tx3 = new Transaction( DateTime.UtcNow, null, new HexString(Serializer.ComputeHash(data2)), HexString.Empty);
+            Transaction tx4 = new Transaction( DateTime.UtcNow, null, new HexString(Serializer.ComputeHash(data2)), HexString.Empty);
+            Transaction tx5 = new Transaction( DateTime.UtcNow, null, new HexString(Serializer.ComputeHash(data2)), HexString.Empty);
 
             BlockMetadata meta = new BlockMetadata()
             {
                 CurrentTransactions = new List<Transaction>() { tx, tx2, tx3, tx4, tx5 },
                 Instance = 1,
                 TransactionCount = 5
-                
+
             };
 
             Block block = new Block()
@@ -88,6 +93,41 @@ namespace Datachain.Services.Tests.Controllers
             };
             var root = MerkleTree.GetMerkleRoot(meta, meta.TransactionCount);
             Assert.IsNotNull(root);
+        }
+        
+        [TestMethod]
+        public void TestSign()
+        {
+            byte[] data = HexString.Parse("abc21321412123131312").ToByteArray();
+            byte[] str  = UTF8Encoding.UTF8.GetBytes("abc21321412123131312");
+            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(1024);
+            string privKey = rsa.ToXmlString(true);
+            
+            Assert.IsNotNull(new ECKeyValidator().SignData(data.ToString(), privKey));
+
+        }
+
+        [TestMethod]
+        public void TestKeys()
+        {
+            new ECKeyValidator().CreateKeys();
+            Assert.Fail();
+        }
+
+        [TestMethod]
+        public void TestECK()
+        {
+            ECKeyValidator key =  new ECKeyValidator();
+            string publicKey = key.RSA.ToXmlString(false);
+            string privateKey = key.RSA.ToXmlString(true);
+
+            string plainText = "originalMessage";
+            // string tamperMessage = "origiinalMessage";
+
+            string signedMessage = key.SignData( plainText,privateKey);
+
+            Assert.IsTrue(key.VerifyMessage(plainText, signedMessage, publicKey));
+
         }
     }
 }

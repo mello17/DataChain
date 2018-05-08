@@ -8,7 +8,7 @@ namespace DataChain.DataLayer.Interfaces
 {
    public  interface IRecordSubscriber
     {
-        Task<IReadOnlyList<Record>> GetRecordsAsync();
+        IReadOnlyList<Record> GetRecords();
         Task<Record> GetRecordsByValueAsync(HexString key);
     }
 }

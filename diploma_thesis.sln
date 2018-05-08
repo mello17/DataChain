@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Datachain.Services.Tests", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataChain.EntityFramework", "Entity\DataChain.EntityFramework.csproj", "{31733A4F-9906-4FAC-B561-C0A776205227}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataChain.Consensus", "DataChain.Consensus\DataChain.Consensus.csproj", "{D8DF4D67-D28C-45E6-81CA-342F78624FB2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,8 +47,15 @@ Global
 		{31733A4F-9906-4FAC-B561-C0A776205227}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{31733A4F-9906-4FAC-B561-C0A776205227}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{31733A4F-9906-4FAC-B561-C0A776205227}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8DF4D67-D28C-45E6-81CA-342F78624FB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8DF4D67-D28C-45E6-81CA-342F78624FB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8DF4D67-D28C-45E6-81CA-342F78624FB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8DF4D67-D28C-45E6-81CA-342F78624FB2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E77C8E37-F227-47DC-85F3-1D31F8A97711}
 	EndGlobalSection
 EndGlobal
