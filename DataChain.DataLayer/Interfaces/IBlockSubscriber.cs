@@ -8,9 +8,12 @@ namespace DataChain.DataLayer.Interfaces
 {
     public interface IBlockSubscriber
     {
-        Task<Block> GetBlock(uint id);
+        Task<Block> GetBlock(int id);
         Task<Block> GetBlock(HexString hash);
-        Task<Block> GetLatestBlock();
+        Block GetLatestBlock();
+        IEnumerable<Block> GetBlocks();
         void Init();
+        void Clear();
+        void AddBlock(Block block);
     }
 }

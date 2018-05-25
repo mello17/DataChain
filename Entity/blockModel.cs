@@ -8,21 +8,30 @@ namespace DataChain.EntityFramework
    public class BlockModel
     {
         [Key]
-        public int Id { get; private set; }
+        public int Id { get; set; }
 
         [ConcurrencyCheck]
         [Required]
         [Index]
-        [MaxLength(1024)]
-        public byte[] BlockHash { get; private set; }
+        [MaxLength(900)]
+        public byte[] BlockHash { get; set; }
 
         [ConcurrencyCheck]
         [Required]
-        public byte[] PreviousHash { get; private set; }
+        public byte[] PreviousHash { get; set; }
 
         [ConcurrencyCheck]
         [Required]
-        public DateTime Timestamp { get; private set; }
+        public DateTime Timestamp { get; set; }
+
+        [ConcurrencyCheck]
+        [Required]
+        [Index]
+        [MaxLength(900)]
+        public byte[] MerkleRoot { get; set; }
+
+        public int? AccountId { get; set; }
+        public virtual AccountModel AccountModel { get; set; }
 
         public virtual ICollection<TransactionModel> Transactions { get; set; }
 

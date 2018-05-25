@@ -14,7 +14,7 @@ namespace DataChain.EntityFramework
         [ConcurrencyCheck]
         [Required]
         [Index]
-        [MaxLength(1024)]
+        [MaxLength(512)]
         public byte[] TransactionHash { get; set; }
 
         [ConcurrencyCheck] 
@@ -28,8 +28,14 @@ namespace DataChain.EntityFramework
         [ConcurrencyCheck]
         [Required]
         [Index]
-        [MaxLength(1024)]
+        [MaxLength(750)]
         public byte[] Signature { get; set; }
+
+        [ConcurrencyCheck]
+        [Required]
+        [Index]
+        [MaxLength(450)]
+        public byte[] PubKey { get; set; }
 
         public virtual int?  BlockModelId { get; set; }
         public virtual BlockModel BlockModel { get; set; }

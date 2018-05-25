@@ -7,72 +7,138 @@ using System.Threading.Tasks;
 using DataChain.DataLayer.Interfaces;
 using DataChain.EntityFramework;
 using NLog;
+using System.Net.WebSockets;
+using System.IO;
+using System.Threading;
 
 namespace DataChain.Infrastructures
 {
     public class BlockBuilder
     {
-       private IBlockSubscriber subscribe;
-       private Logger log;
+       private IBlockSubscriber subscribe = new BlockSubscriber();
+       private ITransactionSubscriber txSubscriber = new TransactionSubscriber();
+       private Logger log = LogManager.GetCurrentClassLogger();
 
-       public BlockBuilder(IBlockSubscriber _subscribe)
+       public BlockBuilder()
        {
-             subscribe = _subscribe;
-           
+
+            this.LatestBlock = subscribe.GetLatestBlock();
        }
 
         public Block LatestBlock
         {
-            get; set;
+            get; private set;
         }
 
-        
-        public Block CreateGenesis(Block genesis)
+        public Block GenerateBlock( List<Transaction> tx)
         {
-            return new Block(  MerkleTree.GetMerkleRoot(genesis.Metadata,1),
-                                HexString.Empty,
-                                DateTime.UtcNow,
-                                0 , 
-                                genesis.Metadata );
-        }
+            if (tx.Count == 0)
+            {
+                return null;
+            }
 
-        public async Task<Block> GenerateBlock(Block block, IEnumerable<Transaction> tx)
-        {
-
-            this.LatestBlock = await subscribe.GetLatestBlock();
+            if (this.LatestBlock == null)
+            {
+                var genesis = Genesis.CreateGenesis();
+                AddBlock(genesis);
+                log.Info("Create genesis block");
+                this.LatestBlock = genesis;
+            }
 
             var prevHash = this.LatestBlock.Hash;
             var nextIndex = this.LatestBlock.Index + 1;
-            var metaData = ComputeMetadata();
-            var nextHash = ComputeBlockHash(block);
-            var merkleroot = MerkleTree.GetMerkleRoot(ComputeMetadata(), ComputeMetadata().TransactionCount);
+            var metaData = ComputeMetadata(tx);
+            
+            var merkleroot = MerkleTree.GetMerkleRoot(metaData, metaData.TransactionCount);
             var timestamp = DateTime.UtcNow;
 
-            return new Block( nextHash, prevHash, timestamp,nextIndex, metaData );
+            var nextHash = ComputeBlockHash(new Block(prevHash, prevHash, timestamp, nextIndex, merkleroot, metaData));
+
+            return new Block( nextHash, prevHash, timestamp,nextIndex, merkleroot, metaData );
         }
 
-
-
-        public string CalculateBlockHeader(Block block)
+        public void AddBlock(Block newBlock)
         {
-            return string.Concat(block.Index, block.TimeStamp, block.PreviousHash, block.Hash);
+            if (newBlock == null)
+            {
+                throw new ArgumentNullException(nameof(newBlock));
+            }
+
+            if (!IsValidNewBlock(newBlock, this.LatestBlock))
+            {
+                throw new InvalidBlockException("Invalid new block");
+            }
+
+            subscribe.AddBlock(newBlock);
+
+
         }
 
-        private BlockMetadata ComputeMetadata()
+        public async Task CommitBlock(Block newBlock)
         {
-            return new BlockMetadata();
+            byte[] buffer = new byte[1024 * 1024];
+            ChainSerializer chainSerializer = new ChainSerializer();
+            buffer = chainSerializer.Encode(new[] { newBlock });
+            ArraySegment<byte> segment = new ArraySegment<byte>(buffer);
+
+            using (ClientWebSocket socket = new ClientWebSocket())
+            {
+
+                UriBuilder uri = new UriBuilder("ws://localhost:16797/");
+
+                WebSocketReceiveResult receiveResult = await socket.ReceiveAsync(
+                       segment, CancellationToken.None);
+
+                await socket.ConnectAsync(uri.Uri, CancellationToken.None);
+                using (MemoryStream stream = new MemoryStream())
+                {
+                    await socket.SendAsync(segment, WebSocketMessageType.Binary, true, CancellationToken.None);
+                }
+
+            }
+
+        }
+
+        public async Task CompleteBlockAdding()
+        {
+            try
+            {
+               var tx_list =  txSubscriber.GetLastTransactionAsync();
+               var newBlock = GenerateBlock(tx_list);
+               AddBlock(newBlock);
+               await CommitBlock(newBlock);
+
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error when respond block " + ex.Message);
+                throw new InvalidBlockException("Error when respond block " + ex.Message);
+            }
+        }
+
+        private BlockMetadata ComputeMetadata(List<Transaction> tx)
+        {
+            var count = tx.Count;
+            return new BlockMetadata() {
+                CurrentTransactions = tx,
+                Instance = 1,
+                TransactionCount = count
+                };
         }
 
         private HexString ComputeBlockHash( Block previousBlock)
         {
 
-            var header = CalculateBlockHeader(previousBlock);
+            var header = new BlockHeader().ComputeBlockHeader(previousBlock.Index,
+                previousBlock.PreviousHash, 
+                previousBlock.TimeStamp,
+                previousBlock.MerkleRoot);
             return new HexString( Serializer.ComputeHash( Serializer.ToBinaryArray(header)));
         }
 
         public bool IsValidNewBlock(Block newBlock, Block previousBlock)
         {
-            this.log = LogManager.GetCurrentClassLogger();
+            
 
             if (previousBlock.Index +1 != newBlock.Index)
             {

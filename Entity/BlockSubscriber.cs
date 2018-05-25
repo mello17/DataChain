@@ -18,7 +18,8 @@ namespace DataChain.EntityFramework
         {
             Database.SetInitializer(new MigrationInitializer());
         }
-        public async Task<Block> GetBlock(uint id)
+
+        public async Task<Block> GetBlock(int id)
         {
             var block = await db.Blocks.FindAsync(id);
             
@@ -32,9 +33,20 @@ namespace DataChain.EntityFramework
             return await Task.FromResult(response);
         }
 
+        public IEnumerable<Block> GetBlocks()
+        {
+            var list = new List<Block>();
+            foreach(var block in db.Blocks.ToList())
+            {
+                list.Add(Serializer.DeserializeBlock(block));
+            }
+
+            return list;
+        }
+
         public async  Task<Block> GetBlock(HexString hash)
         {
-            var block =   db.Blocks.Where(b=> b.BlockHash == hash.ToByteArray()).SingleOrDefault();
+            var block = db.Blocks.Where(b=> b.BlockHash == hash.ToByteArray()).SingleOrDefault();
 
             if (block == null)
             {
@@ -46,17 +58,37 @@ namespace DataChain.EntityFramework
             return await Task.FromResult(response);
         }
 
-        public async Task<Block> GetLatestBlock()
+        public Block GetLatestBlock()
         {
-            var last = db.Blocks.Max(b => b.Id);
 
-            if(last == 0)
+            BlockModel block;
+            try
             {
-                throw new InvalidBlockException("Chain is empty");
+                block = db.Blocks.OrderByDescending(b=> b.Id).FirstOrDefault();
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new Exception(ex.Message);
             }
 
-            return await GetBlock((uint)last);
 
+            return Serializer.DeserializeBlock(block);
+
+        }
+
+        public void Clear()
+        {
+            db.Blocks.RemoveRange(db.Blocks);
+            db.SaveChanges();
+        }
+
+        public void AddBlock(Block block)
+        {
+           
+            var  model = Serializer.SerializeBlock(block);
+
+            db.Blocks.Add(model);
+            db.SaveChanges();
         }
     }
 }

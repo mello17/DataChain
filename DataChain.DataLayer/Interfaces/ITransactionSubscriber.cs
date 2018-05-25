@@ -9,9 +9,10 @@ namespace DataChain.DataLayer.Interfaces
     public interface ITransactionSubscriber
     {
         Task<byte[]> AddTransactionAsync(IEnumerable<Transaction> transaction);
-        Task<Transaction> GetLastTransactionAsync();
-        Task<Transaction> GetTransactionAsync(uint id);
-       
+        List<Transaction> GetLastTransactionAsync();
+        Task<Transaction> GetTransactionAsync(int id);
+        Task<Transaction> GetTransactionAsync(byte[] hash);
+
 
     }
 }

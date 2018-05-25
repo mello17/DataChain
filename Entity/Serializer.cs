@@ -11,24 +11,9 @@ namespace DataChain.EntityFramework
 {
    public static class Serializer
     {
-        public static string RecordDecode(byte[] data)
-        {
-            StringBuilder sBuilder = new StringBuilder();
-            using (MD5 hasher = MD5.Create())
-            {
-               var md5hash = hasher.ComputeHash(Encoding.Default.GetBytes(data.ToString()));
-                for (int i = 0; i < md5hash.Length; i++)
-                {
-                    
-                    sBuilder.Append(md5hash[i].ToString("x2"));
-                }
+       
 
-            }
-            return sBuilder.ToString();
-
-        }
-
-        public static Signature DecodeSignature(byte[] sign) => throw new NotImplementedException();
+        public static SignatureEvidence DecodeSignature(byte[] sign) => throw new NotImplementedException();
 
         public static Transaction TransactionDecode(HexString rawTransaction)
         {
@@ -57,6 +42,10 @@ namespace DataChain.EntityFramework
             return hash;
         }
        
+        public static Account DeserializeAccount(AccountModel model)
+        {
+            return new Account();
+        }
 
         public static Transaction DeserializeTransaction(TransactionModel model)
         {
@@ -64,12 +53,29 @@ namespace DataChain.EntityFramework
                 model.Timestamp,
                 RecordsMapping((IList<RecordModel>)model.Records),
                 new HexString(model.TransactionHash), 
-                new HexString(model.Signature));
+                new HexString(model.Signature),
+                new HexString(model.PubKey));
+        }
+
+        public static TransactionModel SerializeTransaction(Transaction transaction)
+        {
+            var list = transaction.Data.Select(s => s.Value.ToString()).ToList();
+
+            var result = ConcatenateData(list);
+            return new TransactionModel()
+            {
+                PubKey = transaction.PubKey.ToByteArray(),
+                Signature = transaction.Sign.ToByteArray(),
+                RawData = result.ToHexString(),
+                TransactionHash = transaction.Hash.ToByteArray(),
+                Timestamp = transaction.TimeStamp
+
+            };
         }
 
         public static Record DeserializeRecord(RecordModel model)
         {
-            return new Record()
+            return new Record(model.Id, model.Name, new HexString(model.Value),model.Type)
             {
                 Version = model.Id,
                 Value = new HexString(model.Value),
@@ -77,12 +83,41 @@ namespace DataChain.EntityFramework
             };
         }
 
+        public static BlockModel SerializeBlock(Block rawBlock)
+        {
+            List<TransactionModel> tx_list = new List<TransactionModel>();
+
+            foreach(var tx in rawBlock.Metadata.CurrentTransactions)
+             tx_list.Add(SerializeTransaction(tx));
+
+            return new BlockModel()
+            {
+                BlockHash = rawBlock.Hash.ToByteArray(),
+                PreviousHash = rawBlock.PreviousHash.ToByteArray(),
+                Timestamp = rawBlock.TimeStamp,
+                MerkleRoot = rawBlock.MerkleRoot.ToByteArray(),
+                Transactions = tx_list
+            };
+        }
+
+        public static RecordModel SerializeRecord(Record record)
+        {
+            return new RecordModel()
+            {
+                Name = record.Name,
+                Value = record.Value?.ToByteArray(),
+                Type = record.TypeRecord
+            };
+        }
+
+
         public static Block DeserializeBlock(BlockModel model)
         {
             return new Block(new HexString(model.BlockHash), 
                              new HexString(model.PreviousHash),
                              model.Timestamp,
                              model.Id,
+                             new HexString(model.MerkleRoot),
                              ComputeMetadata()
                              );
         }
@@ -100,6 +135,8 @@ namespace DataChain.EntityFramework
             return result;
         }
 
+
+
         public static byte[] ToBinaryArray(string str) => UTF8Encoding.UTF8.GetBytes(str);
 
         public static BlockMetadata ComputeMetadata()
@@ -107,14 +144,27 @@ namespace DataChain.EntityFramework
             return new BlockMetadata();
         }
 
-        //public static TransactionModel SerializeTransaction(Transaction tx)
-        //{
-        //    new TransactionModel()
-        //    {
-        //        RawData = tx.
-        //    };
-        //}
+        
+        private static IEnumerable<Transaction> TransactionsMapping(IList<TransactionModel> model)
+        {
+            return model.SelectMany(tx =>
+            {
+                IList<Transaction> rec = new List<Transaction>();
 
+                for (int i = 0; i <= model.Count(); i++)
+                {
+                    rec.Add(new Transaction()
+                    {
+                        Instance = tx.Id,
+                        Data = RecordsMapping(tx.Records.ToList()),
+                        Hash = new HexString(tx.TransactionHash),
+                        Sign = new HexString(tx.Signature),
+                        TimeStamp = tx.Timestamp,
+                    });
+                }
+                return rec;
+            });
+        }
         private static IEnumerable<Record> RecordsMapping(IList<RecordModel> model)
         {
 
@@ -125,13 +175,7 @@ namespace DataChain.EntityFramework
                 for (int i = 0; i <= model.Count(); i++)
                 {
 
-                    rec.Add(new Record()
-                    {
-                        Version = model[i].Id,
-                        Value = new HexString(model[i].Value),
-                        Name = model[i].Name,
-
-                    });
+                    rec.Add(new Record(model[i].Id, model[i].Name, new HexString(model[i].Value), model[i].Type));                  
 
                 }
                 return rec;

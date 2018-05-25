@@ -38,10 +38,16 @@ namespace DataChain.Infrastructures
                 TransactionCount = 0,
                 Instance = 1
             };
-            GenesisBlock = new Block( HexString.Empty, HexString.Empty, DateTime.UtcNow, 0, Metadata);
+            GenesisBlock = new Block(new HexString(HexString.Parse("00").ToByteArray()), new HexString(HexString.Parse("00").ToByteArray()), DateTime.UtcNow, 0, new HexString(HexString.Parse("00").ToByteArray()),  Metadata);
 
             string jsondata = JsonConvert.SerializeObject(genesis);
-            File.WriteAllText("~/DataChain/Genesis/genesis.json", jsondata);
+            string path = "/DataChain/Genesis/";
+            DirectoryInfo dirInfo = new DirectoryInfo(path);
+            if (!dirInfo.Exists)
+            {
+                dirInfo.Create();
+            }
+            File.WriteAllText(path+"genesis.json", jsondata);
 
             return genesis;
             

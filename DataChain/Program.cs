@@ -1,37 +1,35 @@
 ﻿using System;
-using System.IO;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Configuration;
+using DataChain.WebApplication.Models;
+using System.Web;
+
 
 namespace DataChain
 {
-    class Program
+   public class Program
     {
-        static void Main(string[] args)
-        =>
-            new WebHostBuilder()
-            .UseKestrel()
-            .UseContentRoot(Directory.GetCurrentDirectory())
-            .UseIISIntegration()
-            .UseStartup<Startup>()
-            .Build()
-            .Run();
-    }
+        
 
-    public class Startup
-    {
-        public void ConfigureServices(IServiceCollection services)
+         static void Main(string[] args)
         {
-        }
+            WebSocketBlockStream stream = 
+                new WebSocketBlockStream(new Uri(ConfigurationSettings.AppSettings["endPoint"]));
+            WebSocketServer socketServer = new WebSocketServer();
+            socketServer.Start(ConfigurationSettings.AppSettings["endPoint"]);
 
-        public void Configure(IApplicationBuilder app)
-        {
+
+            while (true)
+            {
+                if (HttpContext.Current != null)
+                stream.ProcessRequest(HttpContext.Current);
+            }
+
+          
+
         }
     }
-
 }
-
-

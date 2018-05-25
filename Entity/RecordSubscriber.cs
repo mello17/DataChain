@@ -15,7 +15,7 @@ namespace DataChain.EntityFramework
         public IReadOnlyList<Record> GetRecords()
         {
             var recordModel_list = db.Records.ToList();
-            List<Record> records_list = new List<Record>();
+            var records_list = new List<Record>();
             foreach(var record in recordModel_list)
             {
                 records_list.Add(Serializer.DeserializeRecord(record));
@@ -24,9 +24,24 @@ namespace DataChain.EntityFramework
             return records_list.AsReadOnly();
         }
 
-        public Task<Record> GetRecordsByValueAsync(HexString key)
+        public Task<Record> GetRecordsByNameAsync(string name)
         {
             throw new NotImplementedException();
+        }
+
+        public async void AddRecordsAsync(IEnumerable<Record> records)
+        {
+
+            var records_list = new List<RecordModel>();
+
+            foreach (var record in records)
+            {
+                records_list.Add(Serializer.SerializeRecord(record));
+            }
+
+            db.Records.AddRange(records_list);
+            await db.SaveChangesAsync();
+
         }
 
     }

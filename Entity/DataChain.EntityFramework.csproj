@@ -47,12 +47,34 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AccountModel.cs" />
+    <Compile Include="AccountSubscriber.cs" />
     <Compile Include="blockModel.cs" />
     <Compile Include="BlockSubscriber.cs" />
     <Compile Include="DatachainContext.cs" />
     <Compile Include="InvalidBlockException.cs" />
     <Compile Include="InvalidTransactionException.cs" />
     <Compile Include="MigrationInitializer.cs" />
+    <Compile Include="Migrations\201805171451187_new.cs" />
+    <Compile Include="Migrations\201805171451187_new.Designer.cs">
+      <DependentUpon>201805171451187_new.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201805171852592_ws.cs" />
+    <Compile Include="Migrations\201805171852592_ws.Designer.cs">
+      <DependentUpon>201805171852592_ws.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201805171905569_wss.cs" />
+    <Compile Include="Migrations\201805171905569_wss.Designer.cs">
+      <DependentUpon>201805171905569_wss.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201805171925465_wsss.cs" />
+    <Compile Include="Migrations\201805171925465_wsss.Designer.cs">
+      <DependentUpon>201805171925465_wsss.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201805240942075_new_pub_key_size.cs" />
+    <Compile Include="Migrations\201805240942075_new_pub_key_size.Designer.cs">
+      <DependentUpon>201805240942075_new_pub_key_size.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RecordModel.cs" />
@@ -70,6 +92,23 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Migrations\201805171451187_new.resx">
+      <DependentUpon>201805171451187_new.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201805171852592_ws.resx">
+      <DependentUpon>201805171852592_ws.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201805171905569_wss.resx">
+      <DependentUpon>201805171905569_wss.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201805171925465_wsss.resx">
+      <DependentUpon>201805171925465_wsss.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201805240942075_new_pub_key_size.resx">
+      <DependentUpon>201805240942075_new_pub_key_size.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

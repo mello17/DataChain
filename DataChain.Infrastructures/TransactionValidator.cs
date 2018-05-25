@@ -13,24 +13,38 @@ using DataChain.DataLayer.Interfaces;
 
 namespace DataChain.Infrastructures
 {
-   public class TransactionValidator
+    public class TransactionValidator : ITransactionValidator
     {
-        private IBlockSubscriber blcSubscribe;
+
         private ITransactionSubscriber txSubscribe;
 
-        public TransactionValidator(IBlockSubscriber _blcSubscribe)
+        public TransactionValidator(TransactionSubscriber _txSubscribe)
         {
-            blcSubscribe = _blcSubscribe;
+            txSubscribe = _txSubscribe;
         }
 
-        public async Task<Transaction> ValidateTransaction( JObject jsonTransaction, string key)
+        public TransactionValidator()
         {
-            var records = (JArray)jsonTransaction["records"];
-            IEnumerable<Record> referenceRecords =  ValidateRecords(records);
+
+        }
+
+        public async Task<Transaction> ValidateTransaction( object records, string key)
+        {
+
+
+            IEnumerable<Record> referenceRecords = null;
+            if (records is JArray)
+            {
+                 referenceRecords = ValidateRecords((JArray)records);
+            }
+            else if (records is IEnumerable<Record>)
+            {
+                referenceRecords = (IEnumerable<Record>)records;
+            }
 
             DateTime date = DateTime.UtcNow;
 
-            var recordValue = records.Select(s=>(string)s["value"]).ToList();
+            var recordValue = referenceRecords.Select(s=> s.Value.ToString() ).ToList();
             var concatenateData = Serializer.ConcatenateData(recordValue);
             var transactionHash = Serializer.ComputeHash(concatenateData.ToHexString());
 
@@ -38,15 +52,15 @@ namespace DataChain.Infrastructures
             ECKeyValidator eckey = new ECKeyValidator();
             try
             {
-                 secret = File.ReadAllText("~/DataChain/privKey/key.xml", UTF8Encoding.UTF8);
+                 secret = File.ReadAllText("/DataChain/privKey/key.xml", UTF8Encoding.UTF8);
             }
             catch (FileNotFoundException)
             {
-
+                return null;
             }
             catch (IOException)
             {
-
+                return null;
             }
 
             string sign = null;
@@ -58,36 +72,51 @@ namespace DataChain.Infrastructures
 
                 if (!eckey.VerifyMessage(concatenateData, sign, key))
                 {
-                    throw new InvalidTransactionException("");
+                    throw new InvalidTransactionException("Signature is not valid");
                 }
+
             }
-            catch
+
+            catch(Exception ex)
             {
-                throw new InvalidTransactionException("");
+                throw new InvalidTransactionException(ex.Message);
             }
 
-            Signature auth = new Signature(HexString.Parse(sign), HexString.Parse(key));
+            SignatureEvidence auth = new SignatureEvidence(new HexString(sign.ToHexString()), new HexString(key.ToHexString()));
             byte[] rawSign = SerializeSignature(auth);
-            Transaction transaction = new Transaction(date, referenceRecords ,new HexString(transactionHash),new HexString( rawSign));
+            //Transaction transaction = new Transaction(date , referenceRecords , 
+            //    new HexString(transactionHash),
+            //    new HexString(sign.ToHexString()), 
+            //    new HexString(key.ToHexString()));
 
-
-            BlockBuilder blockBulider = new BlockBuilder(blcSubscribe);
-            List<Transaction> tx_list = new List<Transaction>() {transaction };
+           // IBlockSubscriber blcSubscribe = new BlockSubscriber();
+            BlockBuilder blockBulider = new BlockBuilder();
+            List<Transaction> tx_list = new List<Transaction>();
+            Transaction transaction = null;
 
             tx_list.AddRange(await Task.WhenAll(referenceRecords.Select(async rec => {
-
-                 ValidateRecords(records);
-                Transaction tx = new Transaction(date, referenceRecords, new HexString(transactionHash), new HexString(rawSign));
-                await blockBulider.GenerateBlock(new Block(), tx_list);
-                return tx; 
+               // await Task.Delay(10000);
+                transaction = new Transaction(date, referenceRecords, new HexString(transactionHash),
+                    new HexString(sign.ToHexString()),
+                    new HexString(key.ToHexString()));
+               
+                return transaction; 
                 }
             )));
 
-            await txSubscribe.AddTransactionAsync(tx_list);
+            var block =  blockBulider.GenerateBlock(tx_list);
+
+            try
+            {
+               await txSubscribe.AddTransactionAsync(tx_list);
+            }
+
+            catch (InvalidTransactionException)
+            {
+                return null;
+            }
 
             return transaction;
-
-
 
         }
 
@@ -98,55 +127,72 @@ namespace DataChain.Infrastructures
             {
                 foreach (var recData in records)
                 {
-                    if (recData["version"] == null || !(recData["version"] is JToken) || (int)recData["version"] <= 0 )
+                    if (string.IsNullOrEmpty((string)recData["Version"])  || !(recData["Version"] is JToken) || (int)recData["Version"] <= 0 )
                     {
                         throw new InvalidTransactionException("InvalidRecordVersion");
                     }
 
-                    if (recData["value"] == null || !(recData["value"] is JToken))
+                    if (recData["Value"] == null || !(recData["Value"] is JToken))
                     {
                         throw new InvalidTransactionException("InvalidRecordValue");
                     }
 
-                    if (recData["name"] == null ||  !(recData["name"] is JToken))
+                    if (string.IsNullOrEmpty((string)recData["Name"]) ||  !(recData["Name"] is JToken))
                     {
                         throw new InvalidTransactionException("InvalidRecordName");
                     }
 
-                    rec.Add(new Record()
+                    if(string.IsNullOrEmpty((string)recData["TypeRecord"]) || !(recData["TypeRecord"] is JToken))
                     {
-                        Version = (int)recData["version"],
-                        Name = (string)recData["name"],
-                        Value = new HexString( HexString.Parse((string)recData["value"]).ToByteArray())
-                    });
+                        throw new InvalidTransactionException("InvalidTypeData");
+                    }
+
+
+                    TypeData enumTypeData ;
+                    TryDataTypeParse((string)recData["TypeRecord"], out enumTypeData);
+
+                    rec.Add(new Record((int)recData["Version"], 
+                        (string)recData["Name"], 
+                        new HexString(recData["Value"]["Value"].Values().Select(b => byte.Parse(b.ToString())).ToArray()),
+                        enumTypeData
+                    ));
                 }
             }
-            catch (InvalidCastException)
+            catch (InvalidCastException ex)
             {
-                throw new InvalidTransactionException("");
+                throw new InvalidTransactionException(ex.Message);
             }
 
             return rec;
         }
 
-        private static void ValidateAuthentication(IReadOnlyList<Signature> authentication, byte[] Hash)
+
+        public static void TryDataTypeParse(string typeData, out TypeData enumType)
         {
-            foreach (Signature evidence in authentication)
+            switch (typeData)
             {
-            //    if (!evidence.(Hash))
-              //      throw new InvalidTransactionException("InvalidSignature");
+                case "0":
+                    enumType = TypeData.Host;
+                break;
+                case "1":
+                    enumType = TypeData.Content;
+                break;
+                case "2":
+                    enumType = TypeData.Account;
+                break;
+                default: throw new InvalidCastException();
             }
         }
 
-        private byte[] SerializeSignature(Signature sign)
+        public byte[] SerializeSignature(SignatureEvidence sign)
         {
-            byte[] buffer = new byte[1024];
+            byte[] buffer= new byte[1154];
             using(MemoryStream stream = new MemoryStream(buffer))
             {
-                BinaryWriter reader = new BinaryWriter(stream);
-                reader.Write(sign.PublicKey.ToByteArray());
-                reader.Write(sign.SignatureData.ToByteArray());
-                reader.Close();
+                BinaryWriter writer = new BinaryWriter(stream);
+                writer.Write(sign.PublicKey.ToByteArray());
+                writer.Write(sign.SignatureData.ToByteArray());
+                writer.Close();
 
             }
             return buffer;
