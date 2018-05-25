@@ -32,7 +32,7 @@ namespace DataChain.WebApplication.Controllers
 
     public class MainController : ApiController
     {
-        private readonly IUnitOfWork work;
+        private readonly IUnitOfWork work = new UnitOfWork();
         private Logger log ;
 
         public MainController(IUnitOfWork _work)
@@ -41,6 +41,10 @@ namespace DataChain.WebApplication.Controllers
             log = LogManager.GetCurrentClassLogger();
         }
 
+        public MainController()
+        {
+            log = LogManager.GetCurrentClassLogger();
+        }
 
         [HttpGet]
         [Route("api/main/getchain")]
@@ -58,8 +62,27 @@ namespace DataChain.WebApplication.Controllers
             }
 
             var accountKey = currentContext.Request.Form["key"];
-            HexString rawToken = KeyParser(accountKey);
+            HexString hexKey = KeyParser(accountKey);
+            try
+            {
+                hexKey = HexString.Parse(accountKey ?? "");
+            }
+            catch (FormatException)
+            {
+                BadRequest();
+            }
 
+            Account account = work.Accounts.GetAccount(hexKey);
+            if (account == null)
+            {
+                BadRequest();
+            }
+
+            if (account.Role == UserRole.Unset || account.Role == UserRole.Writer)
+            {
+                CreateErrorResponse(HttpStatusCode.Unauthorized,
+                    "Permission denied. User not have permission for reading  ");
+            }
 
             ChainConnector connector = new ChainConnector();
             var chain = connector.GetLocalChain();
