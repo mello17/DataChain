@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace DataChain.DataLayer
+namespace DataChain.Abstractions
 {
    public class BlockMetadata
     {

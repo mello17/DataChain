@@ -10,13 +10,12 @@ using System.Web.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Web;
-using Microsoft.AspNet;
 using System.Configuration;
-using DataChain.Infrastructures;
-using DataChain.DataLayer;
-using DataChain.WebServices.Models;
+using DataChain.Infrastructure;
+using DataChain.Abstractions;
+using DataChain.WebApi.Models;
 using DataChain.WebApplication.Models;
-using DataChain.EntityFramework;
+using DataChain.DataProvider;
 using System.Security.Cryptography;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
@@ -34,6 +33,7 @@ namespace DataChain.WebApplication.Controllers
     {
         private readonly IUnitOfWork work = new UnitOfWork();
         private Logger log ;
+        private ChainConnector connector;
 
         public MainController(IUnitOfWork _work)
         {
@@ -44,6 +44,7 @@ namespace DataChain.WebApplication.Controllers
         public MainController()
         {
             log = LogManager.GetCurrentClassLogger();
+            connector = new ChainConnector();
         }
 
         [HttpGet]
@@ -84,7 +85,7 @@ namespace DataChain.WebApplication.Controllers
                     "Permission denied. User not have permission for reading  ");
             }
 
-            ChainConnector connector = new ChainConnector();
+            
             var chain = connector.GetLocalChain();
             var rawChain = JsonConvert.SerializeObject(chain);
             return Request.CreateResponse(HttpStatusCode.OK, rawChain);
@@ -98,7 +99,7 @@ namespace DataChain.WebApplication.Controllers
 
             byte[] buffer = new byte[1024 * 1024];
             ChainSerializer chainSerializer = new ChainSerializer();
-            ChainConnector connector = new ChainConnector();
+            
             buffer = chainSerializer.Encode(connector.GetLocalChain().BlockChain);
             ArraySegment<byte> segment = new ArraySegment<byte>(buffer);
             WebSocket socket = context.WebSocket;
@@ -130,7 +131,6 @@ namespace DataChain.WebApplication.Controllers
                 }
             }
 
-
             catch (Exception ex)
             {
                 log.Error("Error when respond blockchain " + ex.Message);
@@ -145,9 +145,15 @@ namespace DataChain.WebApplication.Controllers
             var processTask = handler.ProcessWebSocketRequestAsync(context);
             return processTask;
         }
-        public void GetAllRecords()
-        {
 
+
+        [Route("api/main/globalchain")]
+        public IEnumerable<Block> GetGlobalChain()
+        {
+            var context = HttpContext.Current;
+            var stream = new WebSocketBlockStream(context.Request.Url);
+
+            return stream.GlobalChain;
         }
 
         [HttpPost]
@@ -186,6 +192,11 @@ namespace DataChain.WebApplication.Controllers
             SHA256 hasher = SHA256.Create();
             var hash_password = hasher.ComputeHash(UTF8Encoding.UTF8.GetBytes(password));
 
+            if (hash_password != hasher.ComputeHash(password.ToHexString()))
+            {
+                CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid password");
+            }
+
             Account user = this.work.Accounts.GetAccount(login);
 
             if (user == null)
@@ -215,11 +226,9 @@ namespace DataChain.WebApplication.Controllers
             return response;
         }
 
-
-
         [HttpGet]
         [Route("record/{name}")]
-        public async Task<JsonResult<Record>> GetRecord(string name, string accountKey)
+        public JsonResult<Record> GetRecord(string name, string accountKey)
         {
 
             HexString hexKey = HexString.Empty;
@@ -249,18 +258,13 @@ namespace DataChain.WebApplication.Controllers
                 CreateErrorResponse(HttpStatusCode.BadRequest, "Name cannot be empty");
             }
            
-            Record result = await this.work.Records.GetRecordsByNameAsync(name);
+            var result = this.work.Records.GetRecordByNameAsync(name);
 
             return Json(result);
 
         }
 
-        [HttpGet]
-        [Route("recordbyindex/{hash}")]
-        public void GetRecordByHash(string hash, int recordType)
-        {
-
-        }
+      
 
         [HttpPost]
         [Route("commit")]
@@ -308,9 +312,10 @@ namespace DataChain.WebApplication.Controllers
                 newTransaction = await this.work.TransactionValidator.ValidateTransaction((JArray)bodyContent["records"], key);
                 txid = newTransaction.Hash;
             }
-            catch(FormatException)
+            catch(Exception ex)
             {
-                //do something
+                CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid transactions, reason: "+ex.Message);
+
             }
             // catch()
 
@@ -322,7 +327,7 @@ namespace DataChain.WebApplication.Controllers
         public async Task<object> GetTransaction( string transactionHash, DataFormat format = DataFormat.Json )
         {
 
-            var hash = HexString.Parse(transactionHash);
+            var hash = KeyParser(transactionHash);
 
             if(format == DataFormat.Json)
             {
@@ -367,19 +372,10 @@ namespace DataChain.WebApplication.Controllers
         }
 
         #region Вспомогательные методы
-        private object GetRecordJson(Record records)
-        {
-            return new
-            {
-                version = records.Version,
-                name  = records.Name,
-                value  = records.Value?.Value
-            };
-        }
 
         private void CreateErrorResponse(HttpStatusCode code,string reason)
         {
-            throw new HttpResponseException(new System.Net.Http.HttpResponseMessage
+            throw new HttpResponseException(new HttpResponseMessage
             {
                 StatusCode = code,
                 ReasonPhrase = reason

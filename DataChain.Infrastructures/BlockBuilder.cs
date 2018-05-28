@@ -1,17 +1,17 @@
 ﻿using System;
-using DataChain.DataLayer;
+using DataChain.Abstractions;
 using System.Collections.Generic;
 using System.Text;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using DataChain.DataLayer.Interfaces;
-using DataChain.EntityFramework;
+using DataChain.Abstractions.Interfaces;
+using DataChain.DataProvider;
 using NLog;
 using System.Net.WebSockets;
 using System.IO;
 using System.Threading;
 
-namespace DataChain.Infrastructures
+namespace DataChain.Infrastructure
 {
     public class BlockBuilder
     {
@@ -28,6 +28,11 @@ namespace DataChain.Infrastructures
         public Block LatestBlock
         {
             get; private set;
+        }
+
+        private string ComputeBlockHeader(int _index, HexString _prevHash, DateTime _timeStamp, HexString _merkle)
+        {
+            return string.Concat(_index, _prevHash, _timeStamp, _merkle);
         }
 
         public Block GenerateBlock( List<Transaction> tx)
@@ -99,20 +104,27 @@ namespace DataChain.Infrastructures
 
         }
 
-        public async Task CompleteBlockAdding()
+        public async Task CompleteBlockAdding(CancellationToken token)
         {
             try
             {
+
                var tx_list =  txSubscriber.GetLastTransactionAsync();
-               var newBlock = GenerateBlock(tx_list);
+               Block newBlock = GenerateBlock(tx_list);
+
+               if (newBlock == null) return;
+               
                AddBlock(newBlock);
                await CommitBlock(newBlock);
+
+               await Task.Delay(TimeSpan.FromMinutes(5), token);
 
             }
             catch (Exception ex)
             {
                 log.Error("Error when respond block " + ex.Message);
-                throw new InvalidBlockException("Error when respond block " + ex.Message);
+
+                await Task.Delay(TimeSpan.FromMinutes(1), token);   
             }
         }
 
@@ -129,7 +141,7 @@ namespace DataChain.Infrastructures
         private HexString ComputeBlockHash( Block previousBlock)
         {
 
-            var header = new BlockHeader().ComputeBlockHeader(previousBlock.Index,
+            var header = ComputeBlockHeader(previousBlock.Index,
                 previousBlock.PreviousHash, 
                 previousBlock.TimeStamp,
                 previousBlock.MerkleRoot);

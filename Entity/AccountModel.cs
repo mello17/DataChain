@@ -2,9 +2,9 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
-using DataChain.DataLayer;
+using DataChain.Abstractions;
 
-namespace DataChain.EntityFramework
+namespace DataChain.DataProvider
 {
     public class AccountModel
     {

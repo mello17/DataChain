@@ -4,10 +4,10 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Web.Http;
-using DataChain.Infrastructures;
+using DataChain.Infrastructure;
 using System.Security.Cryptography;
-using DataChain.DataLayer;
-using DataChain.EntityFramework;
+using DataChain.Abstractions;
+using DataChain.DataProvider;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Datachain.Services;
 

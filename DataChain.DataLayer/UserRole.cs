@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace DataChain.DataLayer
+namespace DataChain.Abstractions
 {
     public enum UserRole : byte
     {

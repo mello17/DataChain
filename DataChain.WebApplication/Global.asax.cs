@@ -10,11 +10,12 @@ using System.Web.Routing;
 using System.Configuration;
 using DataChain.WebApplication.Controllers;
 using DataChain.WebApplication.Models;
-using DataChain.WebServices.Models;
+using DataChain.DataProvider;
+using DataChain.Infrastructure;
+using DataChain.WebApi.Models;
 using Microsoft.AspNet.Builder;
 using System.Data.Entity;
-using DataChain.EntityFramework;
-
+using System.Threading;
 
 namespace DataChain.WebApplication
 {
@@ -36,9 +37,15 @@ namespace DataChain.WebApplication
             ControllerBuilder.Current.SetControllerFactory(
                 new CustomControllerFactory());
             
-            WebSocketBlockStream stream = new WebSocketBlockStream(new Uri(ConfigurationSettings.AppSettings["endPoint"]));
+            WebSocketBlockStream stream = new WebSocketBlockStream(new Uri(ConfigurationManager.AppSettings["endPoint"]));
             
+            if(stream != null)
+            {
+                runningTasks.Add(stream.ProcessRequest(HttpContext.Current));
+            }
 
+            BlockBuilder builder = new BlockBuilder();
+            runningTasks.Add(builder.CompleteBlockAdding(CancellationToken.None));
 
         }
 

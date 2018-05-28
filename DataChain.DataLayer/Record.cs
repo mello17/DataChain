@@ -1,7 +1,7 @@
 ﻿using System;
 
 
-namespace DataChain.DataLayer
+namespace DataChain.Abstractions
 {
    public class Record
     {

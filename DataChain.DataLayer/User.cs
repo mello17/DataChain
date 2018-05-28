@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DataChain.DataLayer;
+using DataChain.Abstractions;
 
-namespace DataChain.DataLayer
+namespace DataChain.Abstractions
 {
     public class Account
     {

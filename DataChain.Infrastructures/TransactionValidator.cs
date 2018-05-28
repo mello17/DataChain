@@ -6,27 +6,23 @@ using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
-using DataChain.EntityFramework;
-using DataChain.DataLayer;
-using DataChain.DataLayer.Interfaces;
+using DataChain.DataProvider;
+using DataChain.Abstractions;
+using DataChain.Abstractions.Interfaces;
 
 
-namespace DataChain.Infrastructures
+namespace DataChain.Infrastructure
 {
     public class TransactionValidator : ITransactionValidator
     {
 
         private ITransactionSubscriber txSubscribe;
 
-        public TransactionValidator(TransactionSubscriber _txSubscribe)
+        public TransactionValidator(ITransactionSubscriber _txSubscribe)
         {
             txSubscribe = _txSubscribe;
         }
-
-        public TransactionValidator()
-        {
-
-        }
+ 
 
         public async Task<Transaction> ValidateTransaction( object records, string key)
         {
@@ -89,7 +85,6 @@ namespace DataChain.Infrastructures
             //    new HexString(sign.ToHexString()), 
             //    new HexString(key.ToHexString()));
 
-           // IBlockSubscriber blcSubscribe = new BlockSubscriber();
             BlockBuilder blockBulider = new BlockBuilder();
             List<Transaction> tx_list = new List<Transaction>();
             Transaction transaction = null;
@@ -104,7 +99,7 @@ namespace DataChain.Infrastructures
                 }
             )));
 
-            var block =  blockBulider.GenerateBlock(tx_list);
+         
 
             try
             {

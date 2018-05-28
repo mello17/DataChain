@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using DataChain.DataLayer;
+using DataChain.Abstractions;
 using System.Security.Cryptography;
 
-namespace DataChain.Infrastructures
+namespace DataChain.Infrastructure
 {
     public static class MerkleTree
     {

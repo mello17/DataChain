@@ -1,6 +1,6 @@
-﻿using DataChain.DataLayer.Interfaces;
-using DataChain.Infrastructures;
-using DataChain.EntityFramework;
+﻿using DataChain.Abstractions.Interfaces;
+using DataChain.Infrastructure;
+using DataChain.DataProvider;
 
 
 namespace DataChain.WebApplication.Models

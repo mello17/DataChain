@@ -2,7 +2,7 @@
 using Entity.Migrations;
 
 
-namespace DataChain.EntityFramework
+namespace DataChain.DataProvider
 {
    public class MigrationInitializer : MigrateDatabaseToLatestVersion<DatachainContext, Configuration>
     {

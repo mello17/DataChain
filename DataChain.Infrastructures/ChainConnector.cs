@@ -3,33 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DataChain.DataLayer;
-using DataChain.EntityFramework;
+using DataChain.Abstractions;
+using DataChain.DataProvider;
 
-namespace DataChain.Infrastructures
+namespace DataChain.Infrastructure
 {
     public  class ChainConnector : Chain
     {
 
         public ChainConnector() : base()
         {
-           // ChainReplace();
-        }
-
-        public Chain GetGlobalChain()
-        {
-
-            foreach (var host in Hosts)
-            {
-                // TODO: Здесь нужно будет переделать. Предварительно выбирается хост с самой большой цепочкой блоков и уже он синхранизуется.
-                var blocks = GetBlocksFromHosts(host);
-                if (blocks != null && blocks.Count > 0)
-                {
-                    return new Chain(blocks);
-                }
-            }
-
-            return null;
+           
         }
 
 
@@ -62,12 +46,9 @@ namespace DataChain.Infrastructures
         }
 
 
-        public void ChainReplace()
+        public void ChainReplace(Chain localChain, Chain globalChain)
         {
            
-            // Получаем цепочки блоков.
-            var globalChain = GetGlobalChain();
-            var localChain = GetLocalChain();
 
             if (globalChain != null && localChain != null)
             {
@@ -105,24 +86,7 @@ namespace DataChain.Infrastructures
             return null;
         }
 
-        /// <summary>
-        /// Получить данные из локальной цепочки.
-        /// </summary>
-        /// <param name="localChain"> Локальная цепочка блоков. </param>
-        private void LoadDataFromLocalChain(Chain localChain)
-        {
-            if (localChain == null)
-            {
-                throw new InvalidBlockException("Локальная цепочка блоков не может быть равна null.");
-            }
-
-            foreach (var block in _blockChain)
-            {
-                _blockChain.Add(block);
-                AddDataInList(block);
-                
-            }
-        }
+       
 
         private void ReplaceLocalChainFromGlobalChain(Chain localChain, Chain globalChain)
         {

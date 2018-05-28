@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DataChain.DataLayer;
-using DataChain.DataLayer.Interfaces;
+using DataChain.Abstractions;
+using DataChain.Abstractions.Interfaces;
 using System.Data.Entity;
 
-namespace DataChain.EntityFramework
+namespace DataChain.DataProvider
 {
    public class BlockSubscriber : IBlockSubscriber
     {

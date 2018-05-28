@@ -3,7 +3,7 @@ using System.Net.WebSockets;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
-using DataChain.EntityFramework;
+using DataChain.DataProvider;
 using System.Text;
 using System.Linq;
 using System.Web;

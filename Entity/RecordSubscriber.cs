@@ -3,18 +3,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DataChain.DataLayer;
-using DataChain.DataLayer.Interfaces;
+using DataChain.Abstractions;
+using DataChain.Abstractions.Interfaces;
 
-namespace DataChain.EntityFramework
+namespace DataChain.DataProvider
 {
     public class RecordSubscriber : IRecordSubscriber
     {
         private DatachainContext db = new DatachainContext();
 
-        public IReadOnlyList<Record> GetRecords()
+        public IReadOnlyList<Record> GetRecords(string recordName, TypeData type)
         {
-            var recordModel_list = db.Records.ToList();
+
+           
+            var recordModel_list = db.Records.Where(b => b.Name == recordName && b.Type == type);
+           
             var records_list = new List<Record>();
             foreach(var record in recordModel_list)
             {
@@ -24,9 +27,18 @@ namespace DataChain.EntityFramework
             return records_list.AsReadOnly();
         }
 
-        public Task<Record> GetRecordsByNameAsync(string name)
+        
+        public Record  GetRecordByNameAsync(string name)
         {
-            throw new NotImplementedException();
+           var records = db.Records.Where(b => b.Name == name);
+           List<Record> records_list = new List<Record>();
+
+           foreach(var record in records)
+           {
+                records_list.Add(Serializer.DeserializeRecord(record));
+           }
+
+            return records_list.SingleOrDefault();
         }
 
         public async void AddRecordsAsync(IEnumerable<Record> records)

@@ -5,9 +5,9 @@ using System.Text;
 using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using DataChain.DataLayer;
+using DataChain.Abstractions;
 
-namespace DataChain.EntityFramework
+namespace DataChain.DataProvider
 {
    public static class Serializer
     {

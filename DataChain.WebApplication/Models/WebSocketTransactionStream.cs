@@ -10,8 +10,8 @@ using System.Net.WebSockets;
 using System.Net;
 using System.Web.WebSockets;
 using Microsoft.Web.WebSockets;
-using DataChain.DataLayer;
-using DataChain.Infrastructures;
+using DataChain.Abstractions;
+using DataChain.Infrastructure;
 
 namespace DataChain.WebApplication.Models 
 {
@@ -20,6 +20,8 @@ namespace DataChain.WebApplication.Models
         private const int MaxMessageSize = 1024;
         
         private readonly UriBuilder endpoint;
+
+        public IEnumerable<Block> GlobalChain { get; private set; }
       
         public WebSocketBlockStream(Uri _endpoint)
         {
@@ -32,16 +34,14 @@ namespace DataChain.WebApplication.Models
         }
 
 
-        public void  ProcessRequest(HttpContext context)
+        public async Task  ProcessRequest(HttpContext context)
         {
             
             if (context.IsWebSocketRequest)
             {
-                
                 context.AcceptWebSocketRequest(WebSocketRequestHandler);
             }
-
-            
+ 
         }
 
         public async Task WebSocketRequestHandler(AspNetWebSocketContext webSocketContext)
@@ -51,12 +51,11 @@ namespace DataChain.WebApplication.Models
             
             ArraySegment<Byte> receiveData = new ArraySegment<Byte>(new Byte[MaxMessageSize]);
             var cancelationToken = new CancellationToken();
-
+            
             while (webSocket.State == WebSocketState.Open)
             {
                 HexString rawBlockChain;
                 
-
                 using (MemoryStream stream = new MemoryStream(MaxMessageSize))
                 {
                     WebSocketReceiveResult result = await webSocket.ReceiveAsync(receiveData, cancelationToken);
@@ -77,11 +76,13 @@ namespace DataChain.WebApplication.Models
                         }
 
                         ChainSerializer serializer = new ChainSerializer();
-                        serializer.Decode(rawBlockChain.ToByteArray());
+                        this.GlobalChain = serializer.Decode(rawBlockChain.ToByteArray());
                     }
 
                 }
             }
+
+            
 
         }
 

@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-
-namespace DataChain.WebServices.Models
+﻿
+namespace DataChain.WebApi.Models
 {
     public enum DataFormat
     {

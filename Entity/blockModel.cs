@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 
-namespace DataChain.EntityFramework
+namespace DataChain.DataProvider
 {
    public class BlockModel
     {

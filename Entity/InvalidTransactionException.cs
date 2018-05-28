@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DataChain.EntityFramework
+namespace DataChain.DataProvider
 {
     public class InvalidTransactionException : Exception
     {

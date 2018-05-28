@@ -5,7 +5,7 @@ namespace Entity.Migrations
     using System.Data.Entity.Migrations;
     using System.Linq;
 
-    public sealed class Configuration : DbMigrationsConfiguration<DataChain.EntityFramework.DatachainContext>
+    public sealed class Configuration : DbMigrationsConfiguration<DataChain.DataProvider.DatachainContext>
     {
         public Configuration()
         {
@@ -13,7 +13,7 @@ namespace Entity.Migrations
             AutomaticMigrationDataLossAllowed = true;
         }
 
-        protected override void Seed(DataChain.EntityFramework.DatachainContext context)
+        protected override void Seed(DataChain.DataProvider.DatachainContext context)
         {
            
         }

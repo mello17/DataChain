@@ -1,7 +1,7 @@
 ﻿using System.Data.Entity;
 
 
-namespace DataChain.EntityFramework
+namespace DataChain.DataProvider
 {
     public class DatachainContext : DbContext
     {

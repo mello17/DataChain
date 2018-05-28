@@ -6,9 +6,9 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Configuration;
 using System.Security.Cryptography;
-using DataChain.DataLayer;
+using DataChain.Abstractions;
 
-namespace DataChain.Infrastructures
+namespace DataChain.Infrastructure
 {
     public class ChainSerializer
     {

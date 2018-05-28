@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
 
-namespace DataChain.DataLayer
+namespace DataChain.Abstractions
 {
     public class HexString :IEquatable<HexString>
     {

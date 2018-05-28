@@ -1,6 +1,6 @@
-﻿using DataChain.DataLayer.Interfaces;
+﻿using DataChain.Abstractions.Interfaces;
 
-namespace DataChain.Infrastructures
+namespace DataChain.Infrastructure
 {
     public interface IUnitOfWork
     {

@@ -4,10 +4,10 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using System.Net.Http;
-using DataChain.EntityFramework;
-using DataChain.DataLayer.Interfaces;
-using DataChain.WebServices.Models;
-using DataChain.Infrastructures;
+using DataChain.DataProvider;
+using DataChain.Abstractions.Interfaces;
+using DataChain.WebApi.Models;
+using DataChain.Infrastructure;
 using DataChain.WebApplication.Models;
 
 namespace DataChain.WebApplication.Controllers

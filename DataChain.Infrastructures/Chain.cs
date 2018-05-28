@@ -4,14 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net.Http;
-using DataChain.DataLayer;
-using DataChain.DataLayer.Interfaces;
-using DataChain.EntityFramework;
+using DataChain.Abstractions;
+using DataChain.Abstractions.Interfaces;
+using DataChain.DataProvider;
 using System.Net.Http.Headers;
 using Newtonsoft;
 using System.IO;
 
-namespace DataChain.Infrastructures
+namespace DataChain.Infrastructure
 {
    public class Chain
     {
@@ -84,7 +84,7 @@ namespace DataChain.Infrastructures
             _blockChain.Add(block);
             BlockSubscribe.AddBlock(block);
           
-            AddDataInList(block);
+            
             SendBlockToGlobalChain(block);
 
            
@@ -113,42 +113,7 @@ namespace DataChain.Infrastructures
        
        
 
-        /// <summary>
-        /// Добавление данных из блоков в списки быстрого доступа.
-        /// </summary>
-        /// <param name="block"> Блок. </param>
-        public void AddDataInList(Block record)
-        {
-            //    switch (block.Data.Type)
-            //    {
-            //        case DataType.Content:
-            //            _data.Add(block.Data);
-            //            foreach (var host in _hosts)
-            //            {
-            //                SendBlockToHosts(host, "AddData", block.Data.Content);
-            //            }
-            //            break;
-            //        case DataType.User:
-            //            var user = new User(block);
-            //            _users.Add(user);
-            //            foreach (var host in _hosts)
-            //            {
-            //                SendBlockToHosts(host, "AddUser", $"{user.Login}&{user.Password}&{user.Role}");
-            //            }
-            //            break;
-            //        case DataType.Node:
-            //            _hosts.Add(block.Data.Content);
-            //            foreach (var host in _hosts)
-            //            {
-            //                SendBlockToHosts(host, "AddHost", block.Data.Content);
-            //            }
-            //            break;
-            //        default:
-            //            throw new InvalidBlockException( "Неизвестный тип блока.");
-            //    }
-            throw new NotImplementedException();
-
-        }
+      
 
         /// <summary>
         /// Добавление данных из блоков в списки быстрого доступа.
@@ -160,7 +125,24 @@ namespace DataChain.Infrastructures
             throw new NotImplementedException();
         }
 
-   
+        /// <summary>
+        /// Получить данные из локальной цепочки.
+        /// </summary>
+        /// <param name="localChain"> Локальная цепочка блоков. </param>
+        public void LoadDataFromLocalChain(Chain localChain)
+        {
+            if (localChain == null)
+            {
+                throw new InvalidBlockException("Локальная цепочка блоков не может быть равна null.");
+            }
+
+            foreach (var block in localChain._blockChain)
+            {
+                _blockChain.Add(block);
+                
+
+            }
+        }
 
         /// <summary>
         /// Отправка запроса к api хоста.

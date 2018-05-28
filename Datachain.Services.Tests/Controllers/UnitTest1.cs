@@ -4,17 +4,17 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Security.Cryptography;
-using DataChain.DataLayer;
-using DataChain.DataLayer.Interfaces;
-using DataChain.EntityFramework;
+using DataChain.Abstractions;
+using DataChain.Abstractions.Interfaces;
+using DataChain.DataProvider;
 using DataChain.WebApplication.Controllers;
-using DataChain.Infrastructures;
+using DataChain.Infrastructure;
 using DataChain.WebApplication.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
 
-namespace Datachain.Services.Tests.Controllers
+namespace DataChain.Tests
 {
     /// <summary>
     /// Сводное описание для UnitTest1
@@ -195,12 +195,14 @@ namespace Datachain.Services.Tests.Controllers
         [TestMethod]
         public void TestCreateBlock()
         {
+            // 
             BlockBuilder builder = new BlockBuilder();
            // var genesis = Genesis.CreateGenesis();
             BlockSubscriber subscriber = new BlockSubscriber();
-           
+           // 
              var block =  builder.GenerateBlock(InitTransactions());
              builder.AddBlock(block);
+            Assert.IsNotNull(block);
         }
 
         [TestMethod]
@@ -220,8 +222,8 @@ namespace Datachain.Services.Tests.Controllers
             var sign = keyValidator.SignData("messadhgdhdhh", priv_key);
             SignatureEvidence rawSign = new SignatureEvidence(new HexString(Serializer.ToBinaryArray(sign)),
                 new HexString(Serializer.ToBinaryArray(pub_key)));
-            
-            TransactionValidator validator = new TransactionValidator();
+            ITransactionSubscriber subscr = new TransactionSubscriber();
+            TransactionValidator validator = new TransactionValidator(subscr);
             var byteSign = validator.SerializeSignature(rawSign);
 
             byte[] bytePrivKey = null, bytePubKey = null;

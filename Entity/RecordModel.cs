@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using DataChain.DataLayer;
+using DataChain.Abstractions;
 
 
-namespace DataChain.EntityFramework
+namespace DataChain.DataProvider
 {
 
     [Table("Records")]

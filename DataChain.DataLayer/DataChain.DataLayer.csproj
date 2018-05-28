@@ -51,7 +51,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Block.cs" />
-    <Compile Include="BlockHeader.cs" />
     <Compile Include="BlockMetadata.cs" />
     <Compile Include="DataType.cs" />
     <Compile Include="HexString.cs" />

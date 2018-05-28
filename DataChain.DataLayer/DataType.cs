@@ -1,5 +1,5 @@
 ﻿
-namespace DataChain.DataLayer
+namespace DataChain.Abstractions
 {
     public enum TypeData
     {

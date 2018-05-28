@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Data.Entity.Validation;
 using System.Threading.Tasks;
-using DataChain.DataLayer;
-using DataChain.DataLayer.Interfaces;
+using DataChain.Abstractions;
+using DataChain.Abstractions.Interfaces;
 
-namespace DataChain.EntityFramework
+namespace DataChain.DataProvider
 {
    public class TransactionSubscriber : ITransactionSubscriber
     {

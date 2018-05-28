@@ -12,6 +12,7 @@ socket.onclose = function (event) {
     } else {
         alert('Обрыв соединения'); 
     }
+
     alert('Код: ' + event.code + ' причина: ' + event.reason);
 };
 

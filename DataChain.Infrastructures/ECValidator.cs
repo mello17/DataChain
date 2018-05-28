@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Text;
 using System.IO;
-using DataChain.EntityFramework;
+using DataChain.DataProvider;
 using System.Security.Cryptography;
 
 
-namespace DataChain.Infrastructures
+namespace DataChain.Infrastructure
 {
     public class ECKeyValidator
     {
