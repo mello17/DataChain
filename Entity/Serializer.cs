@@ -4,23 +4,14 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
 using DataChain.Abstractions;
 
 namespace DataChain.DataProvider
 {
    public static class Serializer
     {
-       
-
-        public static SignatureEvidence DecodeSignature(byte[] sign) => throw new NotImplementedException();
-
-        public static Transaction TransactionDecode(HexString rawTransaction)
-        {
-            // var byteData = rawTransaction.ToByteArray();
-            throw new NotImplementedException();
-
-        }
+        
+        
 
         public static byte[] ToHexString(this string rawString)
         {
@@ -75,12 +66,8 @@ namespace DataChain.DataProvider
 
         public static Record DeserializeRecord(RecordModel model)
         {
-            return new Record(model.Id, model.Name, new HexString(model.Value),model.Type)
-            {
-                Version = model.Id,
-                Value = new HexString(model.Value),
-                Name = model.Name
-            };
+            return new Record(model.Id, model.Name, new HexString(model.Value), model.Type);
+           
         }
 
         public static BlockModel SerializeBlock(Block rawBlock)
@@ -118,7 +105,7 @@ namespace DataChain.DataProvider
                              model.Timestamp,
                              model.Id,
                              new HexString(model.MerkleRoot),
-                             ComputeMetadata()
+                             ComputeMetadata(TransactionsMapping(model.Transactions))
                              );
         }
 
@@ -139,13 +126,19 @@ namespace DataChain.DataProvider
 
         public static byte[] ToBinaryArray(string str) => UTF8Encoding.UTF8.GetBytes(str);
 
-        public static BlockMetadata ComputeMetadata()
+        public static BlockMetadata ComputeMetadata(IEnumerable<Transaction> tx)
         {
-            return new BlockMetadata();
+            var count = tx.Count();
+            return new BlockMetadata()
+            {
+                CurrentTransactions = tx.ToList(),
+                Instance = 1,
+                TransactionCount = count
+            };
         }
 
-        
-        private static IEnumerable<Transaction> TransactionsMapping(IList<TransactionModel> model)
+
+        private static IEnumerable<Transaction> TransactionsMapping(IEnumerable<TransactionModel> model)
         {
             return model.SelectMany(tx =>
             {

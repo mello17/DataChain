@@ -75,6 +75,10 @@
     <Compile Include="Migrations\201805240942075_new_pub_key_size.Designer.cs">
       <DependentUpon>201805240942075_new_pub_key_size.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\201805292242207_gf.cs" />
+    <Compile Include="Migrations\201805292242207_gf.Designer.cs">
+      <DependentUpon>201805292242207_gf.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RecordModel.cs" />
@@ -108,6 +112,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\201805240942075_new_pub_key_size.resx">
       <DependentUpon>201805240942075_new_pub_key_size.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201805292242207_gf.resx">
+      <DependentUpon>201805292242207_gf.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace DataChain.Abstractions
 {
-    public class HexString :IEquatable<HexString>
+    public class HexString : IEquatable<HexString>
     {
         private readonly byte[] data;
 
@@ -16,11 +16,7 @@ namespace DataChain.Abstractions
         {
             Empty = new HexString(new byte[0]);
         }
-       public override bool Equals(object obj)
-        {
-            return base.Equals(obj);
-        }
-
+     
         public HexString(byte[] arr)
         {
             this.data = new byte[arr.Length];
@@ -105,6 +101,16 @@ namespace DataChain.Abstractions
 
                 return true;
             }
+        }
+
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (var byteValue in Value)
+                 builder.Append(byteValue.ToString("X2"));
+
+            return builder.ToString();
+           
         }
     }
 }

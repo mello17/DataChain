@@ -69,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccountKey.cs" />
+    <Compile Include="Aes.cs" />
     <Compile Include="BlockBuilder.cs" />
     <Compile Include="ChainConnector.cs" />
     <Compile Include="Chain.cs" />

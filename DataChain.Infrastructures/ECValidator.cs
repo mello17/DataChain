@@ -9,27 +9,21 @@ namespace DataChain.Infrastructure
 {
     public class ECKeyValidator
     {
-        private RSACryptoServiceProvider rsa;
 
-        public RSACryptoServiceProvider RSA
-        {
-            get
-            {
-                return rsa;
-            }
-            set
-            {
-                rsa = value;
-            }
-        }
+        public RSACryptoServiceProvider RSA { get; private set; }
 
         public ECKeyValidator()
         {
-            rsa = new RSACryptoServiceProvider(2048);
+            RSA = new RSACryptoServiceProvider(2048);
         }
 
         public bool VerifyMessage( string originalData, string signedDataBase64, string publicKey)
         {
+
+            if(string.IsNullOrEmpty(originalData) || string.IsNullOrEmpty(signedDataBase64) || string.IsNullOrEmpty(publicKey))
+            {
+                throw new ArgumentNullException();
+            }
 
             bool verified;
 
@@ -46,6 +40,11 @@ namespace DataChain.Infrastructure
 
         public string SignData(string data, string privateKey)
         {
+
+            if (string.IsNullOrEmpty(data) || string.IsNullOrEmpty(privateKey))
+            {
+                throw new ArgumentNullException();
+            }
 
             RSA.FromXmlString(privateKey);
             

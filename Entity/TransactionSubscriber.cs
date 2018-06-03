@@ -11,8 +11,14 @@ namespace DataChain.DataProvider
 {
    public class TransactionSubscriber : ITransactionSubscriber
     {
-        private DatachainContext db = new DatachainContext();
-        private IBlockSubscriber blcSubscribe = new BlockSubscriber();
+        private readonly DatachainContext database ;
+        private readonly IBlockSubscriber blcSubscribe;
+
+        public TransactionSubscriber()
+        {
+            database = new DatachainContext();
+            blcSubscribe = new BlockSubscriber();
+        }
 
 
         public  List<Transaction> GetLastTransactionAsync()
@@ -21,7 +27,7 @@ namespace DataChain.DataProvider
             IEnumerable<TransactionModel> tx_list;
             try
             {
-                tx_list = db.Transactions.Where(x => !(x.BlockModelId.HasValue) );
+                tx_list = database.Transactions.Where(x => !(x.BlockModelId.HasValue) );
             }
             catch (InvalidOperationException)
             {
@@ -64,7 +70,7 @@ namespace DataChain.DataProvider
                     PubKey = tx.PubKey.ToByteArray(),
                 };
 
-               var txs = db.Transactions.ToList();
+               var txs = database.Transactions.ToList();
                
                var conflict = txs.Where(b =>  b.RawData == model.RawData 
                                                        && b.PubKey == model.PubKey 
@@ -82,8 +88,8 @@ namespace DataChain.DataProvider
             try
             {
 
-                db.Transactions.AddRange(tx_list);
-                await db.SaveChangesAsync();
+                database.Transactions.AddRange(tx_list);
+                await database.SaveChangesAsync();
             }
             catch(DbEntityValidationException ex)
             {
@@ -99,7 +105,7 @@ namespace DataChain.DataProvider
         [global::System.Diagnostics.Contracts.ContractRuntimeIgnored]
         public async Task<Transaction> GetTransactionAsync(int index)
         {
-            var tx = await db.Transactions.FindAsync(index);
+            var tx = await database.Transactions.FindAsync(index);
 
             if (tx == null)
             {
@@ -118,13 +124,13 @@ namespace DataChain.DataProvider
 
             try
             {
-                 tx = db.Transactions.Where(b => b.TransactionHash == hash).Single();
+                 tx = database.Transactions.Where(b => b.TransactionHash == hash).Single();
             }
 
             catch (InvalidOperationException)
             {
-                db.Transactions.Remove(tx); //это дичь
-                db.SaveChanges();
+                database.Transactions.Remove(tx); //это дичь
+                database.SaveChanges();
                 throw new InvalidTransactionException("Optimistic concurrency ");
             }
             if (tx == null)

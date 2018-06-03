@@ -21,7 +21,6 @@ namespace DataChain.DataProvider
         public byte[] Password { get; set; }
 
         [Required]
-        [Column(TypeName ="tinyint")]
         public UserRole Role { get; set; }
 
         [Required]

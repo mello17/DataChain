@@ -11,7 +11,7 @@ namespace DataChain.Abstractions.Interfaces
         Task<Block> GetBlock(int id);
         Task<Block> GetBlock(HexString hash);
         Block GetLatestBlock();
-        IEnumerable<Block> GetBlocks();
+        List<Block> GetBlocks();
         void Init();
         void Clear();
         void AddBlock(Block block);

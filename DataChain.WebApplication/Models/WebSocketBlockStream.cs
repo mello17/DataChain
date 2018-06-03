@@ -17,7 +17,7 @@ namespace DataChain.WebApplication.Models
 {
     public class WebSocketBlockStream 
     {
-        private const int MaxMessageSize = 1024;
+        private const int maxMessageSize = 1024;
         
         private readonly UriBuilder endpoint;
 
@@ -37,26 +37,27 @@ namespace DataChain.WebApplication.Models
         public async Task  ProcessRequest(HttpContext context)
         {
             
-            if (context.IsWebSocketRequest)
+            
+            if (context.IsWebSocketRequestUpgrading)
             {
-                context.AcceptWebSocketRequest(WebSocketRequestHandler);
+                context.AcceptWebSocketRequest(GetBlockChainRequestHandler);
             }
  
         }
 
-        public async Task WebSocketRequestHandler(AspNetWebSocketContext webSocketContext)
+        public async Task GetBlockChainRequestHandler(AspNetWebSocketContext webSocketContext)
         {
 
             WebSocket webSocket = webSocketContext.WebSocket;
             
-            ArraySegment<Byte> receiveData = new ArraySegment<Byte>(new Byte[MaxMessageSize]);
+            ArraySegment<Byte> receiveData = new ArraySegment<Byte>(new Byte[maxMessageSize]);
             var cancelationToken = new CancellationToken();
             
             while (webSocket.State == WebSocketState.Open)
             {
                 HexString rawBlockChain;
                 
-                using (MemoryStream stream = new MemoryStream(MaxMessageSize))
+                using (MemoryStream stream = new MemoryStream(maxMessageSize))
                 {
                     WebSocketReceiveResult result = await webSocket.ReceiveAsync(receiveData, cancelationToken);
 
@@ -76,6 +77,7 @@ namespace DataChain.WebApplication.Models
                         }
 
                         ChainSerializer serializer = new ChainSerializer();
+                        
                         this.GlobalChain = serializer.Decode(rawBlockChain.ToByteArray());
                     }
 

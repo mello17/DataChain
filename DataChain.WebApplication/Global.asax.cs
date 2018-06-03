@@ -12,6 +12,7 @@ using DataChain.WebApplication.Controllers;
 using DataChain.WebApplication.Models;
 using DataChain.DataProvider;
 using DataChain.Infrastructure;
+using DataChain.Abstractions.Interfaces;
 using DataChain.WebApi.Models;
 using Microsoft.AspNet.Builder;
 using System.Data.Entity;
@@ -23,6 +24,8 @@ namespace DataChain.WebApplication
     {
 
          List<Task> runningTasks = new List<Task>();
+         
+         BlockBuilder builder = new BlockBuilder(new BlockSubscriber(),new TransactionSubscriber());
 
         protected void Application_Start()
         {
@@ -44,11 +47,43 @@ namespace DataChain.WebApplication
                 runningTasks.Add(stream.ProcessRequest(HttpContext.Current));
             }
 
-            BlockBuilder builder = new BlockBuilder();
+            CancellationTokenSource tokenSource = new CancellationTokenSource();
+            DateTime startTime = RoundCurrentToNextFiveMinutes();
+
+            Task timerTask = RunPeriodically( 
+                startTime, TimeSpan.FromMinutes(5), tokenSource.Token);
             runningTasks.Add(builder.CompleteBlockAdding(CancellationToken.None));
+
+            Task.WaitAll(runningTasks.ToArray(), tokenSource.Token);
 
         }
 
-       
+      private  async Task RunPeriodically( DateTime startTime, TimeSpan interval, CancellationToken token)
+        {
+            DateTime _nextRunTime = startTime;
+
+            while (true)
+            {
+                TimeSpan delay = _nextRunTime - DateTime.UtcNow;
+
+                if (delay > TimeSpan.Zero)
+                {
+                    await Task.Delay(delay, token);
+                }
+                await builder.CompleteBlockAdding(CancellationToken.None);
+               
+                _nextRunTime += interval;
+            }
+        }
+
+       private DateTime RoundCurrentToNextFiveMinutes()
+        {
+            DateTime now = DateTime.UtcNow,
+                result = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0);
+
+            return result.AddMinutes(((now.Minute / 5) + 1) * 5);
+        }
+
+
     }
 }

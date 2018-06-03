@@ -80,10 +80,7 @@ namespace DataChain.Tests
 
             };
 
-            Block block = new Block()
-            {
-                Metadata = meta
-            };
+            
             var root = MerkleTree.GetMerkleRoot(meta, meta.TransactionCount);
             Assert.IsNotNull(root);
         }
@@ -93,7 +90,7 @@ namespace DataChain.Tests
         {
             byte[] data = HexString.Parse("abc21321412123131312").ToByteArray();
             byte[] str  = UTF8Encoding.UTF8.GetBytes("abc21321412123131312");
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(1024);
+            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048);
             string privKey = rsa.ToXmlString(true);
             
             Assert.IsNotNull(new ECKeyValidator().SignData(data.ToString(), privKey));
@@ -124,6 +121,16 @@ namespace DataChain.Tests
         }
 
         [TestMethod]
+        public void TestCorrectChain()
+        {
+
+            ChainConnector connector = new ChainConnector();
+            var correct = connector.CheckCorrect();
+
+            Assert.IsTrue(correct);
+        }
+
+        [TestMethod]
         public  void TestAuthorize()
         {
 
@@ -132,8 +139,8 @@ namespace DataChain.Tests
             Account user = new Account() {Login = "good", Password = new HexString(UTF8Encoding.UTF8.GetBytes("badaps1")) };
             //user.AddUser(user);
 
-             controller.Authentication();
-          // Assert.IsFalse();
+            var str = controller.Authentication().Result;
+            Assert.Fail();
         }
 
         [TestMethod]
@@ -148,10 +155,14 @@ namespace DataChain.Tests
         [TestMethod]
         public  void TestCommitBlock()
         {
-            BlockBuilder builder = new BlockBuilder();
             BlockSubscriber subscriber = new BlockSubscriber();
-            var block = subscriber.GetBlock(1);
-           // builder.CommitBlock(block);
+            BlockBuilder builder = new BlockBuilder(subscriber, new TransactionSubscriber());
+            
+            var block = subscriber.GetBlock(1).Result;
+
+
+             builder.CommitBlock(block).Wait();
+            Assert.IsNotNull(block);
         }
 
         [TestMethod]
@@ -188,20 +199,21 @@ namespace DataChain.Tests
             string privkey = new ECKeyValidator().CreateKeys().ToXmlString(true);
             string pubkey =new ECKeyValidator().CreateKeys().ToXmlString(false);
             new ECKeyValidator().SignData(message, privkey);
-            validator.ValidateTransaction(jArray, pubkey);
+            validator.ValidateTransaction(jArray, pubkey).Wait();
             
         }
 
         [TestMethod]
         public void TestCreateBlock()
         {
-            // 
-            BlockBuilder builder = new BlockBuilder();
-           // var genesis = Genesis.CreateGenesis();
             BlockSubscriber subscriber = new BlockSubscriber();
+
+            BlockBuilder builder = new BlockBuilder(subscriber, new TransactionSubscriber());
+           // var genesis = Genesis.CreateGenesis();
+            
            // 
              var block =  builder.GenerateBlock(InitTransactions());
-             builder.AddBlock(block);
+            // builder.AddBlock(block);
             Assert.IsNotNull(block);
         }
 
@@ -248,16 +260,29 @@ namespace DataChain.Tests
         public void TestChainEncode()
         {
             IBlockSubscriber subscriber = new BlockSubscriber();
-            var block =  subscriber.GetBlock(10);
-
-           // Chain chain = new Chain(block);
+            var blocks =  subscriber.GetBlocks();
+            
+            Chain chain = new Chain(blocks);
 
             ChainSerializer serializer = new ChainSerializer();
-           // Assert.IsNotNull(serializer.Encode(chain.BlockChain));
+            var encrypt = serializer.Encode(chain.BlockChain);
+            var decrypt = serializer.Decode(encrypt);
+
+            Assert.IsNotNull(serializer.Encode(chain.BlockChain));
         }
 
+        [TestMethod]
+        public void TestGenesisEncode()
+        {
+            Chain chain = new Chain(Genesis.CreateGenesis());
+
+            ChainSerializer serializer = new ChainSerializer();
+
+            var encrypt = serializer.Encode(chain.BlockChain);
+            var decrypt = serializer.Decode(encrypt);
 
 
 
+        }
     }
 }

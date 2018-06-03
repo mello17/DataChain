@@ -9,7 +9,7 @@ using System.Net.WebSockets;
 
 namespace DataChain.WebApplication.Models
 {
-    public class NewHandler : WebSocketHandler
+    public class BlockChainHandler : WebSocketHandler
     {
         private static WebSocketCollection clients = new WebSocketCollection();
 

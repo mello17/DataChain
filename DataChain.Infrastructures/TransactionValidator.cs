@@ -17,16 +17,17 @@ namespace DataChain.Infrastructure
     {
 
         private ITransactionSubscriber txSubscribe;
+        private IRecordSubscriber recordSubscriber;
 
-        public TransactionValidator(ITransactionSubscriber _txSubscribe)
+        public TransactionValidator(ITransactionSubscriber _txSubscribe, IRecordSubscriber _recordSubscriber)
         {
             txSubscribe = _txSubscribe;
+            recordSubscriber = _recordSubscriber;
         }
  
 
         public async Task<Transaction> ValidateTransaction( object records, string key)
         {
-
 
             IEnumerable<Record> referenceRecords = null;
             if (records is JArray)
@@ -37,10 +38,19 @@ namespace DataChain.Infrastructure
             {
                 referenceRecords = (IEnumerable<Record>)records;
             }
+            try
+            {
+                await recordSubscriber.AddRecordsAsync(referenceRecords);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
 
             DateTime date = DateTime.UtcNow;
 
-            var recordValue = referenceRecords.Select(s=> s.Value.ToString() ).ToList();
+            var recordValue = referenceRecords.Select(s=> s.Value.ToString()).ToList();
             var concatenateData = Serializer.ConcatenateData(recordValue);
             var transactionHash = Serializer.ComputeHash(concatenateData.ToHexString());
 
@@ -80,17 +90,13 @@ namespace DataChain.Infrastructure
 
             SignatureEvidence auth = new SignatureEvidence(new HexString(sign.ToHexString()), new HexString(key.ToHexString()));
             byte[] rawSign = SerializeSignature(auth);
-            //Transaction transaction = new Transaction(date , referenceRecords , 
-            //    new HexString(transactionHash),
-            //    new HexString(sign.ToHexString()), 
-            //    new HexString(key.ToHexString()));
-
-            BlockBuilder blockBulider = new BlockBuilder();
+           
+            BlockBuilder blockBulider = new BlockBuilder(new BlockSubscriber(), txSubscribe);
             List<Transaction> tx_list = new List<Transaction>();
             Transaction transaction = null;
 
             tx_list.AddRange(await Task.WhenAll(referenceRecords.Select(async rec => {
-               // await Task.Delay(10000);
+                await Task.Delay(100);
                 transaction = new Transaction(date, referenceRecords, new HexString(transactionHash),
                     new HexString(sign.ToHexString()),
                     new HexString(key.ToHexString()));
@@ -98,8 +104,6 @@ namespace DataChain.Infrastructure
                 return transaction; 
                 }
             )));
-
-         
 
             try
             {

@@ -10,7 +10,7 @@ namespace DataChain.WebApplication.Models
         private TransactionSubscriber txSubscribe;
         private RecordSubscriber recSubscribe;
         private BlockSubscriber blcSubscribe;
-        private ITransactionValidator validator;
+        private TransactionValidator validator;
         private AccountSubscriber account;
        
 

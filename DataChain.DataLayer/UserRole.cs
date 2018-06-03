@@ -5,7 +5,7 @@ using System.Text;
 
 namespace DataChain.Abstractions
 {
-    public enum UserRole : byte
+    public enum UserRole 
     {
 
         Admin = 1,

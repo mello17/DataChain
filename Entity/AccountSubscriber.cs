@@ -29,6 +29,8 @@ namespace DataChain.DataProvider
         }
         public Account GetAccount(HexString token)  
         {
+
+            
             AccountModel model = null;
             try
             {

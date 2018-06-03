@@ -14,7 +14,7 @@ namespace DataChain.Abstractions
         public HexString Password { get;  set; }
         public HexString Key { get; set; }
         public UserRole Role { get; set; }
-        public IReadOnlyList<Block> CreatedBlocks { get; set; }
+       
 
         public Account GetUser(string login)
         {
@@ -32,7 +32,7 @@ namespace DataChain.Abstractions
             {
                 Login = user.Login,
                 Password = user.Password,
-                CreatedBlocks = new List<Block>(),
+               
             };
         }
     }

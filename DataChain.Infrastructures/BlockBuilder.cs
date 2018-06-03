@@ -15,14 +15,23 @@ namespace DataChain.Infrastructure
 {
     public class BlockBuilder
     {
-       private IBlockSubscriber subscribe = new BlockSubscriber();
-       private ITransactionSubscriber txSubscriber = new TransactionSubscriber();
-       private Logger log = LogManager.GetCurrentClassLogger();
+       private IBlockSubscriber subscribe;
+       private ITransactionSubscriber txSubscriber;
+       private Logger log;
+       private ChainConnector connector;
 
-       public BlockBuilder()
+       public BlockBuilder(IBlockSubscriber _subscribe, ITransactionSubscriber _txSubscriber)
        {
 
+            subscribe = _subscribe;
+            txSubscriber = _txSubscriber;
+            connector = new ChainConnector();   
+            log = LogManager.GetCurrentClassLogger();
             this.LatestBlock = subscribe.GetLatestBlock();
+            if (this.LatestBlock == null)
+            {
+                connector.CreateNewBlockChain();
+            }
        }
 
         public Block LatestBlock
@@ -30,9 +39,9 @@ namespace DataChain.Infrastructure
             get; private set;
         }
 
-        private string ComputeBlockHeader(int _index, HexString _prevHash, DateTime _timeStamp, HexString _merkle)
+        private string ComputeBlockHeader(Block block)
         {
-            return string.Concat(_index, _prevHash, _timeStamp, _merkle);
+            return string.Concat(block.Index, block.PreviousHash, block.TimeStamp, block.MerkleRoot);
         }
 
         public Block GenerateBlock( List<Transaction> tx)
@@ -52,14 +61,14 @@ namespace DataChain.Infrastructure
 
             var prevHash = this.LatestBlock.Hash;
             var nextIndex = this.LatestBlock.Index + 1;
-            var metaData = ComputeMetadata(tx);
+            var metaData = Serializer.ComputeMetadata(tx);
             
             var merkleroot = MerkleTree.GetMerkleRoot(metaData, metaData.TransactionCount);
             var timestamp = DateTime.UtcNow;
 
-            var nextHash = ComputeBlockHash(new Block(prevHash, prevHash, timestamp, nextIndex, merkleroot, metaData));
+            var nextHash = ComputeBlockHash(new Block(prevHash, prevHash, timestamp, nextIndex, merkleroot));
 
-            return new Block( nextHash, prevHash, timestamp,nextIndex, merkleroot, metaData );
+            return new Block( nextHash, prevHash, timestamp,nextIndex, merkleroot );
         }
 
         public void AddBlock(Block newBlock)
@@ -95,11 +104,8 @@ namespace DataChain.Infrastructure
                        segment, CancellationToken.None);
 
                 await socket.ConnectAsync(uri.Uri, CancellationToken.None);
-                using (MemoryStream stream = new MemoryStream())
-                {
-                    await socket.SendAsync(segment, WebSocketMessageType.Binary, true, CancellationToken.None);
-                }
-
+                await socket.SendAsync(segment, WebSocketMessageType.Binary, true, CancellationToken.None);
+                
             }
 
         }
@@ -117,7 +123,7 @@ namespace DataChain.Infrastructure
                AddBlock(newBlock);
                await CommitBlock(newBlock);
 
-               await Task.Delay(TimeSpan.FromMinutes(5), token);
+              // await Task.Delay(TimeSpan.FromMinutes(5), token);
 
             }
             catch (Exception ex)
@@ -128,30 +134,19 @@ namespace DataChain.Infrastructure
             }
         }
 
-        private BlockMetadata ComputeMetadata(List<Transaction> tx)
-        {
-            var count = tx.Count;
-            return new BlockMetadata() {
-                CurrentTransactions = tx,
-                Instance = 1,
-                TransactionCount = count
-                };
-        }
+       
 
         private HexString ComputeBlockHash( Block previousBlock)
         {
 
-            var header = ComputeBlockHeader(previousBlock.Index,
-                previousBlock.PreviousHash, 
-                previousBlock.TimeStamp,
-                previousBlock.MerkleRoot);
+            var header = ComputeBlockHeader(previousBlock);
             return new HexString( Serializer.ComputeHash( Serializer.ToBinaryArray(header)));
         }
 
         public bool IsValidNewBlock(Block newBlock, Block previousBlock)
         {
-            
 
+            Chain chain = new Chain(newBlock);
             if (previousBlock.Index +1 != newBlock.Index)
             {
                 log.Error($"Invalid index. Block id : {newBlock.Index}, current block id : {previousBlock.Index} ");
@@ -162,9 +157,15 @@ namespace DataChain.Infrastructure
                 log.Error($"Invalid hash. Block hash : {newBlock.Hash}, current block : {previousBlock.Hash}");
                 return false;
             }
-            else if (previousBlock.TimeStamp.Millisecond < newBlock.TimeStamp.Millisecond)
+            else if (previousBlock.TimeStamp > newBlock.TimeStamp)
             {
                 log.Error("Invalid timestamp. New block cannot create in future");
+                return false;
+            }
+           
+            else if (!connector.CheckCorrect())
+            {
+                log.Error("Invalid block");
                 return false;
             }
 

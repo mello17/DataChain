@@ -11,18 +11,7 @@ namespace DataChain.Infrastructure
 {
    public static class Genesis
     {
-        private static Block genesis;
-        public static Block GenesisBlock {
-            get
-            {
-                return genesis;
-            }
-           private set
-            {
-                genesis = value;
-            }
-
-        }
+        public static Block GenesisBlock { get; private set; }
 
         static Genesis()
         {
@@ -32,15 +21,9 @@ namespace DataChain.Infrastructure
         public static Block CreateGenesis()
         {
 
-            BlockMetadata Metadata = new BlockMetadata()
-            {
-                CurrentTransactions = new List<Transaction>(),
-                TransactionCount = 0,
-                Instance = 1
-            };
-            GenesisBlock = new Block(new HexString(HexString.Parse("00").ToByteArray()), new HexString(HexString.Parse("00").ToByteArray()), DateTime.UtcNow, 0, new HexString(HexString.Parse("00").ToByteArray()),  Metadata);
+            GenesisBlock = new Block(new HexString(HexString.Parse("00").ToByteArray()), new HexString(HexString.Parse("00").ToByteArray()), DateTime.UtcNow, 1, new HexString(HexString.Parse("00").ToByteArray()));
 
-            string jsondata = JsonConvert.SerializeObject(genesis);
+            string jsondata = JsonConvert.SerializeObject(GenesisBlock);
             string path = "/DataChain/Genesis/";
             DirectoryInfo dirInfo = new DirectoryInfo(path);
             if (!dirInfo.Exists)
@@ -49,7 +32,7 @@ namespace DataChain.Infrastructure
             }
             File.WriteAllText(path+"genesis.json", jsondata);
 
-            return genesis;
+            return GenesisBlock;
             
 
         }

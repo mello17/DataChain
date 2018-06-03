@@ -31,22 +31,32 @@ namespace DataChain.WebApplication.Controllers
 
     public class MainController : ApiController
     {
-        private readonly IUnitOfWork work = new UnitOfWork();
+        #region fields
+
+        private readonly IUnitOfWork work;
         private Logger log ;
         private ChainConnector connector;
 
+        #endregion
+
+        #region constructs
         public MainController(IUnitOfWork _work)
         {
             work = _work;
-            log = LogManager.GetCurrentClassLogger();
+            log = LogManager.GetCurrentClassLogger(typeof(MainController));
+            connector = new ChainConnector();
         }
 
         public MainController()
         {
-            log = LogManager.GetCurrentClassLogger();
+            work = new UnitOfWork();
+            log = LogManager.GetCurrentClassLogger(typeof(MainController));
             connector = new ChainConnector();
+            
         }
+        #endregion
 
+        #region actions
         [HttpGet]
         [Route("api/main/getchain")]
         public HttpResponseMessage GetChain()
@@ -57,21 +67,18 @@ namespace DataChain.WebApplication.Controllers
                 currentContext.IsWebSocketRequestUpgrading)
             {
                 
-                currentContext.AcceptWebSocketRequest(ProcessWebsocketSession);
+                currentContext.AcceptWebSocketRequest(SendChainFromWebSockets);
                 return Request.CreateResponse(HttpStatusCode.SwitchingProtocols);
 
             }
 
             var accountKey = currentContext.Request.Form["key"];
-            HexString hexKey = KeyParser(accountKey);
-            try
+            if (accountKey == null)
             {
-                hexKey = HexString.Parse(accountKey ?? "");
+                CreateErrorResponse(HttpStatusCode.Unauthorized,
+                    "Key can't be null  ");
             }
-            catch (FormatException)
-            {
-                BadRequest();
-            }
+            HexString hexKey = KeyParser(accountKey); 
 
             Account account = work.Accounts.GetAccount(hexKey);
             if (account == null)
@@ -88,72 +95,21 @@ namespace DataChain.WebApplication.Controllers
             
             var chain = connector.GetLocalChain();
             var rawChain = JsonConvert.SerializeObject(chain);
+           
             return Request.CreateResponse(HttpStatusCode.OK, rawChain);
 
 
         }
 
-        private async Task<object> ProcessWebsocketSession(AspNetWebSocketContext context)
-        {
-            var handler = new NewHandler();
-
-            byte[] buffer = new byte[1024 * 1024];
-            ChainSerializer chainSerializer = new ChainSerializer();
-            
-            buffer = chainSerializer.Encode(connector.GetLocalChain().BlockChain);
-            ArraySegment<byte> segment = new ArraySegment<byte>(buffer);
-            WebSocket socket = context.WebSocket;
-
-            try
-            {
-                handler.OnOpen();
-                var user = context.User;
-                WebSocketReceiveResult receiveResult;
-
-                while (socket.State == WebSocketState.Open)
-                {
-                    do
-                    {
-                        receiveResult = await socket.ReceiveAsync(
-                           segment, CancellationToken.None);
-
-                        if (receiveResult.MessageType == WebSocketMessageType.Close)
-                        {
-                            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-                        }
-                    } while (!receiveResult.EndOfMessage);
-
-
-                    using (MemoryStream stream = new MemoryStream())
-                    {
-                        await socket.SendAsync(segment, WebSocketMessageType.Binary, true, CancellationToken.None);
-                    }
-                }
-            }
-
-            catch (Exception ex)
-            {
-                log.Error("Error when respond blockchain " + ex.Message);
-                throw new InvalidBlockException("Error when respond blockchain ");
-            }
-            finally
-            {
-
-                handler.OnClose();
-            }
-
-            var processTask = handler.ProcessWebSocketRequestAsync(context);
-            return processTask;
-        }
-
 
         [Route("api/main/globalchain")]
-        public IEnumerable<Block> GetGlobalChain()
+        public JsonResult<IEnumerable<Block>> GetGlobalChain()
         {
             var context = HttpContext.Current;
             var stream = new WebSocketBlockStream(context.Request.Url);
+            stream.ProcessRequest(context).Wait();
 
-            return stream.GlobalChain;
+            return Json(stream.GlobalChain);
         }
 
         [HttpPost]
@@ -201,7 +157,7 @@ namespace DataChain.WebApplication.Controllers
 
             if (user == null)
             {
-                CreateErrorResponse(HttpStatusCode.NotFound, "User not found.");
+                CreateErrorResponse(HttpStatusCode.Unauthorized, "User not found.");
             }
 
             var now = DateTime.UtcNow;
@@ -221,7 +177,6 @@ namespace DataChain.WebApplication.Controllers
                 username = user.Login
             };
             var response = JsonConvert.SerializeObject(token, new JsonSerializerSettings { Formatting = Formatting.Indented });
-
 
             return response;
         }
@@ -265,10 +220,9 @@ namespace DataChain.WebApplication.Controllers
         }
 
       
-
         [HttpPost]
         [Route("commit")]
-        public async Task<HexString> PostTransaction([FromBody]string key, 
+        public async Task<string> PostTransaction([FromBody]string key, 
             [FromBody]string transaction, [FromBody] string accountKey)
         {
 
@@ -278,14 +232,13 @@ namespace DataChain.WebApplication.Controllers
             }
 
             HexString rawToken = KeyParser(accountKey);
+
             Account user = this.work.Accounts.GetAccount(rawToken);
             if(user != null)
                 if(user.Role  == UserRole.Reader || user.Role == UserRole.Unset)
                 {
                     CreateErrorResponse(HttpStatusCode.Unauthorized, "Permission denied. User not have permission for adding transaction ");
                 }
-
-            var block = await this.work.Blocks.GetBlock(rawToken);
             
 
             JObject bodyContent = null;
@@ -309,7 +262,7 @@ namespace DataChain.WebApplication.Controllers
 
             try
             {
-                newTransaction = await this.work.TransactionValidator.ValidateTransaction((JArray)bodyContent["records"], key);
+                newTransaction = await this.work.TransactionValidator.ValidateTransaction(bodyContent["records"] as JArray, key);
                 txid = newTransaction.Hash;
             }
             catch(Exception ex)
@@ -319,11 +272,11 @@ namespace DataChain.WebApplication.Controllers
             }
             // catch()
 
-            return txid ?? HexString.Empty;
+            return txid.ToString();
         }
 
         [HttpGet]
-        [Route("tx/{id}")]
+        [Route("tx/{transactionHash}")]
         public async Task<object> GetTransaction( string transactionHash, DataFormat format = DataFormat.Json )
         {
 
@@ -356,7 +309,7 @@ namespace DataChain.WebApplication.Controllers
         }
     
 
-        public async Task<JsonResult<Transaction>> JsonTransaction( byte[] transactionHash)
+        public async Task<JsonResult<Transaction>> JsonTransaction(byte[] transactionHash)
         {
 
             var tx = await this.work.Transactions.GetTransactionAsync(transactionHash);
@@ -370,6 +323,22 @@ namespace DataChain.WebApplication.Controllers
 
             return Json(response);
         }
+
+        [HttpGet]
+        [Route("block/{id}")]
+        public async Task<JsonResult<Block>> GetBlock(int id)
+        {
+            var rawBlock = await this.work.Blocks.GetBlock(id);
+
+            if (rawBlock == null)
+            {
+                CreateErrorResponse(HttpStatusCode.NotFound, "Block is not found");
+            }
+
+          
+           return Json(rawBlock);
+        }
+        #endregion
 
         #region Вспомогательные методы
 
@@ -412,6 +381,55 @@ namespace DataChain.WebApplication.Controllers
             return claimsIdentity;
         }
 
+        private async Task<object> SendChainFromWebSockets(AspNetWebSocketContext context)
+        {
+            var handler = new BlockChainHandler();
+
+            byte[] buffer = new byte[1024 * 1024];
+            ChainSerializer chainSerializer = new ChainSerializer();
+
+            buffer = chainSerializer.Encode(connector.GetLocalChain().BlockChain);
+            ArraySegment<byte> segment = new ArraySegment<byte>(buffer);
+            WebSocket socket = context.WebSocket;
+
+            try
+            {
+                handler.OnOpen();
+                var user = context.User;
+                WebSocketReceiveResult receiveResult;
+
+                while (socket.State == WebSocketState.Open)
+                {
+                    do
+                    {
+                        receiveResult = await socket.ReceiveAsync(
+                           segment, CancellationToken.None);
+
+                        if (receiveResult.MessageType == WebSocketMessageType.Close)
+                        {
+                            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+                        }
+                    } while (!receiveResult.EndOfMessage);
+
+                    await socket.SendAsync(segment, WebSocketMessageType.Binary, true, CancellationToken.None);
+
+                }
+            }
+
+            catch (Exception ex)
+            {
+                log.Error("Error when respond blockchain " + ex.Message);
+                throw new InvalidBlockException("Error when respond blockchain ");
+            }
+            finally
+            {
+
+                handler.OnClose();
+            }
+
+            var processTask = handler.ProcessWebSocketRequestAsync(context);
+            return processTask;
+        }
 
         #endregion
     }

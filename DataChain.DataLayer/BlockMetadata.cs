@@ -5,7 +5,7 @@ namespace DataChain.Abstractions
    public class BlockMetadata
     {
         public int Instance { get; set; }
-        public  int TransactionCount
+        public int TransactionCount
         {
             get;set;          
         }

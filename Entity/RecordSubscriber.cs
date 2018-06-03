@@ -41,7 +41,7 @@ namespace DataChain.DataProvider
             return records_list.SingleOrDefault();
         }
 
-        public async void AddRecordsAsync(IEnumerable<Record> records)
+        public async Task AddRecordsAsync(IEnumerable<Record> records)
         {
 
             var records_list = new List<RecordModel>();

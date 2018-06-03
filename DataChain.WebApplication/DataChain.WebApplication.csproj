@@ -246,7 +246,7 @@
     <Compile Include="Models\NewHandler.cs" />
     <Compile Include="Models\UnitOfWork.cs" />
     <Compile Include="Models\WebSocketServer.cs" />
-    <Compile Include="Models\WebSocketTransactionStream.cs" />
+    <Compile Include="Models\WebSocketBlockStream.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -280,7 +280,6 @@
     <Content Include="ApplicationInsights.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <None Include="Properties\PublishProfiles\CustomProfile.pubxml" />
     <Content Include="Scripts\DemoSocket.js" />
     <Content Include="Views\test.html" />
     <Content Include="Web.config">
@@ -302,6 +301,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+    <Folder Include="Properties\PublishProfiles\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="fonts\glyphicons-halflings-regular.woff2" />

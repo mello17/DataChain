@@ -15,32 +15,12 @@ namespace DataChain.Infrastructure
         {
            
         }
+       
 
-
-        /// <summary>
-        /// Получение всех блоков от хоста через api.
-        /// </summary>
-        /// <param name="ip"> Адрес хоста в сети. </param>
-        /// <returns> Список блоков. </returns>
-        private static List<Block> GetBlocksFromHosts(string ip)
-        {
-            // http://localhost:28451/api/getchain/ пример запроса.
-            var response = SendRequest(ip, "getchain", "");
-            if (string.IsNullOrEmpty(response))
-            {
-                return null;
-            }
-            else
-            {
-                // var blocks = DeserializeCollectionBlocks(response);
-                return null;
-            }
-        }
-
-        private void CreateNewBlockChain()
+        public void CreateNewBlockChain()
         {
             BlockSubscribe.Clear();
-            _blockChain = new List<Block>();
+            blockChain = new List<Block>();
             var genesisBlock = Genesis.CreateGenesis();
             AddBlock(genesisBlock);
         }
@@ -48,7 +28,6 @@ namespace DataChain.Infrastructure
 
         public void ChainReplace(Chain localChain, Chain globalChain)
         {
-           
 
             if (globalChain != null && localChain != null)
             {
@@ -99,7 +78,7 @@ namespace DataChain.Infrastructure
            
             //   blockSubscriber.Clear();
 
-            var newBlocks = globalChain.BlockChain.Reverse().Take(countNewBlocks).ToList();
+            var newBlocks = globalChain.BlockChain.AsEnumerable().Reverse().Take(countNewBlocks).ToList();
             foreach (var block in newBlocks)
             {
                 AddBlock(block);

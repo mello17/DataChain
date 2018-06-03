@@ -6,13 +6,18 @@ using System.Threading.Tasks;
 using DataChain.Abstractions;
 using DataChain.Abstractions.Interfaces;
 using System.Data.Entity;
+using System.Data.Entity.Validation;
 
 namespace DataChain.DataProvider
 {
    public class BlockSubscriber : IBlockSubscriber
     {
-        private DatachainContext db = new DatachainContext();
+        private readonly DatachainContext database;
 
+        public BlockSubscriber()
+        {
+            database = new DatachainContext();
+        }
 
         public void Init()
         {
@@ -21,7 +26,7 @@ namespace DataChain.DataProvider
 
         public async Task<Block> GetBlock(int id)
         {
-            var block = await db.Blocks.FindAsync(id);
+            var block = await database.Blocks.FindAsync(id);
             
             if (block == null)
             {
@@ -33,10 +38,10 @@ namespace DataChain.DataProvider
             return await Task.FromResult(response);
         }
 
-        public IEnumerable<Block> GetBlocks()
+        public List<Block> GetBlocks()
         {
             var list = new List<Block>();
-            foreach(var block in db.Blocks.ToList())
+            foreach(var block in database.Blocks.ToList())
             {
                 list.Add(Serializer.DeserializeBlock(block));
             }
@@ -46,7 +51,7 @@ namespace DataChain.DataProvider
 
         public async  Task<Block> GetBlock(HexString hash)
         {
-            var block = db.Blocks.Where(b=> b.BlockHash == hash.ToByteArray()).SingleOrDefault();
+            var block = database.Blocks.Where(b=> b.BlockHash == hash.ToByteArray()).SingleOrDefault();
 
             if (block == null)
             {
@@ -64,13 +69,17 @@ namespace DataChain.DataProvider
             BlockModel block;
             try
             {
-                block = db.Blocks.OrderByDescending(b=> b.Id).FirstOrDefault();
+                block = database.Blocks.OrderByDescending(b=> b.Id).FirstOrDefault();
             }
             catch (InvalidOperationException ex)
             {
                 throw new Exception(ex.Message);
             }
 
+            if(block == null)
+            {
+                return null;
+            }
 
             return Serializer.DeserializeBlock(block);
 
@@ -78,8 +87,8 @@ namespace DataChain.DataProvider
 
         public void Clear()
         {
-            db.Blocks.RemoveRange(db.Blocks);
-            db.SaveChanges();
+            database.Blocks.RemoveRange(database.Blocks);
+            database.SaveChanges();
         }
 
         public void AddBlock(Block block)
@@ -87,8 +96,18 @@ namespace DataChain.DataProvider
            
             var  model = Serializer.SerializeBlock(block);
 
-            db.Blocks.Add(model);
-            db.SaveChanges();
+            try
+            {
+                database.Blocks.Add(model);
+                database.SaveChanges();
+            }
+            catch (DbEntityValidationException ex)
+            {
+                throw new InvalidOperationException(ex.EntityValidationErrors.First()
+                    .ValidationErrors
+                    .FirstOrDefault()
+                    .ErrorMessage);
+            }
         }
     }
 }
