@@ -5,6 +5,8 @@ using System.Text;
 
 namespace DataChain.Abstractions
 {
+
+    [Serializable]
     public class HexString : IEquatable<HexString>
     {
         private readonly byte[] data;

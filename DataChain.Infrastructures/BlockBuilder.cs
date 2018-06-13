@@ -15,23 +15,20 @@ namespace DataChain.Infrastructure
 {
     public class BlockBuilder
     {
-       private IBlockSubscriber subscribe;
-       private ITransactionSubscriber txSubscriber;
+
+       private IBlockRepository blockRep;
+       private ITransactionRepository txRep;
        private Logger log;
        private ChainConnector connector;
 
-       public BlockBuilder(IBlockSubscriber _subscribe, ITransactionSubscriber _txSubscriber)
+       public BlockBuilder(IBlockRepository _subscribe, ITransactionRepository _txSubscriber)
        {
 
-            subscribe = _subscribe;
-            txSubscriber = _txSubscriber;
+            blockRep = _subscribe;
+            txRep = _txSubscriber;
             connector = new ChainConnector();   
             log = LogManager.GetCurrentClassLogger();
-            this.LatestBlock = subscribe.GetLatestBlock();
-            if (this.LatestBlock == null)
-            {
-                connector.CreateNewBlockChain();
-            }
+          
        }
 
         public Block LatestBlock
@@ -51,8 +48,11 @@ namespace DataChain.Infrastructure
                 return null;
             }
 
+            this.LatestBlock = blockRep.GetLatestBlock();
+
             if (this.LatestBlock == null)
             {
+                connector.CreateNewBlockChain();
                 var genesis = Genesis.CreateGenesis();
                 AddBlock(genesis);
                 log.Info("Create genesis block");
@@ -66,9 +66,10 @@ namespace DataChain.Infrastructure
             var merkleroot = MerkleTree.GetMerkleRoot(metaData, metaData.TransactionCount);
             var timestamp = DateTime.UtcNow;
 
-            var nextHash = ComputeBlockHash(new Block(prevHash, prevHash, timestamp, nextIndex, merkleroot));
+            var nextHash = ComputeBlockHash(new Block(prevHash, prevHash, timestamp, nextIndex,
+                merkleroot, metaData.CurrentTransactions));
 
-            return new Block( nextHash, prevHash, timestamp,nextIndex, merkleroot );
+            return new Block( nextHash, prevHash, timestamp,nextIndex, merkleroot, metaData.CurrentTransactions);
         }
 
         public void AddBlock(Block newBlock)
@@ -83,30 +84,32 @@ namespace DataChain.Infrastructure
                 throw new InvalidBlockException("Invalid new block");
             }
 
-            subscribe.AddBlock(newBlock);
+            blockRep.AddBlock(newBlock);
 
 
         }
 
         public async Task CommitBlock(Block newBlock)
-        {
-            byte[] buffer = new byte[1024 * 1024];
-            ChainSerializer chainSerializer = new ChainSerializer();
-            buffer = chainSerializer.Encode(new[] { newBlock });
-            ArraySegment<byte> segment = new ArraySegment<byte>(buffer);
+        { 
 
+            ChainSerializer chainSerializer = new ChainSerializer();
+            Tuple<byte[], byte[]> tuple = chainSerializer.Encode(new[] { newBlock });
+            
             using (ClientWebSocket socket = new ClientWebSocket())
             {
 
-                UriBuilder uri = new UriBuilder("ws://localhost:16797/");
-
-                WebSocketReceiveResult receiveResult = await socket.ReceiveAsync(
-                       segment, CancellationToken.None);
+                ArraySegment<byte> segment = 
+                    new ArraySegment<byte>(chainSerializer.ConcateByteArray(tuple));
+               
+                UriBuilder uri = new UriBuilder("ws://localhost:16790/");
+                
+                //WebSocketReceiveResult receiveResult = await socket.ReceiveAsync(segment, CancellationToken.None);
 
                 await socket.ConnectAsync(uri.Uri, CancellationToken.None);
                 await socket.SendAsync(segment, WebSocketMessageType.Binary, true, CancellationToken.None);
                 
             }
+           
 
         }
 
@@ -114,16 +117,20 @@ namespace DataChain.Infrastructure
         {
             try
             {
+                object lock_object = new object();
+                Block newBlock = null;
 
-               var tx_list =  txSubscriber.GetLastTransactionAsync();
-               Block newBlock = GenerateBlock(tx_list);
+                lock (lock_object)
+                {
+                    var tx_list = txRep.GetLastTransactionAsync();
+                    newBlock = GenerateBlock(tx_list);
 
-               if (newBlock == null) return;
-               
-               AddBlock(newBlock);
-               await CommitBlock(newBlock);
+                    if (newBlock == null) return;
+                    AddBlock(newBlock);
+                    txRep.Update(tx_list,newBlock.Index);
+                }
 
-              // await Task.Delay(TimeSpan.FromMinutes(5), token);
+                await CommitBlock(newBlock);
 
             }
             catch (Exception ex)
@@ -132,6 +139,8 @@ namespace DataChain.Infrastructure
 
                 await Task.Delay(TimeSpan.FromMinutes(1), token);   
             }
+
+
         }
 
        
@@ -140,14 +149,14 @@ namespace DataChain.Infrastructure
         {
 
             var header = ComputeBlockHeader(previousBlock);
-            return new HexString( Serializer.ComputeHash( Serializer.ToBinaryArray(header)));
+            return new HexString(Serializer.ComputeHash(Serializer.ToBinaryArray(header)));
         }
 
         public bool IsValidNewBlock(Block newBlock, Block previousBlock)
         {
 
-            Chain chain = new Chain(newBlock);
-            if (previousBlock.Index +1 != newBlock.Index)
+            
+            if (previousBlock.Index + 1 != newBlock.Index)
             {
                 log.Error($"Invalid index. Block id : {newBlock.Index}, current block id : {previousBlock.Index} ");
                 return false;
@@ -163,7 +172,7 @@ namespace DataChain.Infrastructure
                 return false;
             }
            
-            else if (!connector.CheckCorrect())
+            else if (!connector.CheckCorrect(newBlock))
             {
                 log.Error("Invalid block");
                 return false;
@@ -171,9 +180,5 @@ namespace DataChain.Infrastructure
 
             return true;
         }
-        
-       
-
-
     }
 }

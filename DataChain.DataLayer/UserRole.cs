@@ -5,6 +5,7 @@ using System.Text;
 
 namespace DataChain.Abstractions
 {
+    [Serializable]
     public enum UserRole 
     {
 

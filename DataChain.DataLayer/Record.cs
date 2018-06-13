@@ -3,6 +3,7 @@
 
 namespace DataChain.Abstractions
 {
+   [Serializable]
    public class Record
     {
         public int Version { get; set; }

@@ -25,7 +25,7 @@ namespace DataChain.WebApplication
 
          List<Task> runningTasks = new List<Task>();
          
-         BlockBuilder builder = new BlockBuilder(new BlockSubscriber(),new TransactionSubscriber());
+         BlockBuilder builder = new BlockBuilder(new BlockRepository(),new TransactionRepository());
 
         protected void Application_Start()
         {
@@ -36,10 +36,7 @@ namespace DataChain.WebApplication
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
             Database.SetInitializer(new MigrationInitializer());
-           
-            ControllerBuilder.Current.SetControllerFactory(
-                new CustomControllerFactory());
-            
+                       
             WebSocketBlockStream stream = new WebSocketBlockStream(new Uri(ConfigurationManager.AppSettings["endPoint"]));
             
             if(stream != null)
@@ -51,7 +48,7 @@ namespace DataChain.WebApplication
             DateTime startTime = RoundCurrentToNextFiveMinutes();
 
             Task timerTask = RunPeriodically( 
-                startTime, TimeSpan.FromMinutes(5), tokenSource.Token);
+                startTime, TimeSpan.FromMinutes(10), tokenSource.Token);
             runningTasks.Add(builder.CompleteBlockAdding(CancellationToken.None));
 
             Task.WaitAll(runningTasks.ToArray(), tokenSource.Token);

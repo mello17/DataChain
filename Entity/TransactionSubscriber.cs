@@ -6,18 +6,19 @@ using System.Data.Entity.Validation;
 using System.Threading.Tasks;
 using DataChain.Abstractions;
 using DataChain.Abstractions.Interfaces;
+using System.Data.Entity;
 
 namespace DataChain.DataProvider
 {
-   public class TransactionSubscriber : ITransactionSubscriber
+   public class TransactionRepository : ITransactionRepository
     {
         private readonly DatachainContext database ;
-        private readonly IBlockSubscriber blcSubscribe;
+        private readonly IBlockRepository blcSubscribe;
 
-        public TransactionSubscriber()
+        public TransactionRepository()
         {
             database = new DatachainContext();
-            blcSubscribe = new BlockSubscriber();
+            blcSubscribe = new BlockRepository();
         }
 
 
@@ -28,10 +29,13 @@ namespace DataChain.DataProvider
             try
             {
                 tx_list = database.Transactions.Where(x => !(x.BlockModelId.HasValue) );
+              
+                
             }
-            catch (InvalidOperationException)
+            
+            catch (InvalidOperationException ex)
             {
-                return null;
+                throw new InvalidTransactionException(ex.Message);
             }
 
             var raw_tx_list = new List<Transaction>();
@@ -44,6 +48,37 @@ namespace DataChain.DataProvider
             return raw_tx_list;
         }
 
+        public void Update(List<Transaction> raw_tx, int index)
+        {
+
+            List<TransactionModel> serialized_tx = new List<TransactionModel>();
+
+            foreach (var tx in raw_tx)
+            {
+                serialized_tx.Add( Serializer.SerializeTransaction(tx));
+            }
+            try
+            {
+               
+                    foreach (var tx in serialized_tx)
+                    {
+                        if (tx.BlockModelId == null)
+                        {
+                            var original = database.Transactions.Find(tx.Id);
+                            original.BlockModelId = index;
+                            
+                            database.SaveChanges();
+                        }
+                    }
+            }
+            catch (DbEntityValidationException ex)
+            {
+                throw new InvalidOperationException(ex.EntityValidationErrors.First()
+                    .ValidationErrors
+                    .FirstOrDefault()
+                    .ErrorMessage);
+            }
+        }
         public async Task<byte[]> AddTransactionAsync(IEnumerable<Transaction> transactions)
         {
             IList<TransactionModel> tx_list = new List<TransactionModel>();
@@ -71,16 +106,14 @@ namespace DataChain.DataProvider
                 };
 
                var txs = database.Transactions.ToList();
-               
-               var conflict = txs.Where(b =>  b.RawData == model.RawData 
-                                                       && b.PubKey == model.PubKey 
-                                                       && b.Signature == model.Signature
-                                                       && b.TransactionHash == model.TransactionHash
-                                                       ).ToList();
-                if(conflict.Count != 0)
+               foreach(var raw_tx in txs)
                 {
-                    throw new InvalidTransactionException("Optimistic concurrency");
+                    if(raw_tx.TransactionHash.SequenceEqual(model.TransactionHash)  )
+                    {
+                        throw new InvalidTransactionException("Optimistic concurrency");
+                    }
                 }
+
                 tx_list.Add(model);
             }
 
@@ -118,13 +151,37 @@ namespace DataChain.DataProvider
 
         }
 
+
+        public List<Transaction> GetTransactionsByBlockId(int id)
+        {
+
+            List<TransactionModel> tx_list = new List<TransactionModel>();
+            IEnumerable<Transaction> raw_tx_list = null;
+
+            try
+            {
+                tx_list = database.Transactions.Where(b => b.BlockModelId == id)
+                    .ToList();
+                raw_tx_list = Serializer.TransactionsMapping(tx_list, id);
+            }
+            catch 
+            {
+                throw new InvalidTransactionException("");
+            }
+
+            return raw_tx_list.ToList();
+        }
         public async Task<Transaction> GetTransactionAsync(byte[] hash)
         {
             TransactionModel tx = null; 
 
             try
             {
-                 tx = database.Transactions.Where(b => b.TransactionHash == hash).Single();
+                 tx = database.Transactions.Where(b => b.TransactionHash == hash).First();
+                if (tx == null)
+                {
+                    return null;
+                }
             }
 
             catch (InvalidOperationException)
@@ -133,10 +190,7 @@ namespace DataChain.DataProvider
                 database.SaveChanges();
                 throw new InvalidTransactionException("Optimistic concurrency ");
             }
-            if (tx == null)
-            {
-                return null;
-            }
+            
             
             Transaction response = Serializer.DeserializeTransaction(tx);
 

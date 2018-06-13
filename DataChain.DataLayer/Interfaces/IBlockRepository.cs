@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DataChain.Abstractions.Interfaces
 {
-    public interface IBlockSubscriber
+    public interface IBlockRepository
     {
         Task<Block> GetBlock(int id);
         Task<Block> GetBlock(HexString hash);
@@ -15,5 +15,6 @@ namespace DataChain.Abstractions.Interfaces
         void Init();
         void Clear();
         void AddBlock(Block block);
+        
     }
 }

@@ -11,11 +11,6 @@ namespace DataChain.Abstractions
         }
         public IList<Transaction> CurrentTransactions { get; set; }
 
-        public Transaction LatestTransaction
-        {
-            get; 
-        }
-
        
     }
 }

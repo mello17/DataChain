@@ -25,6 +25,7 @@ using System.IO;
 using System.Net.Http;
 using System.Web.WebSockets;
 using NLog;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace DataChain.WebApplication.Controllers
 {
@@ -40,17 +41,11 @@ namespace DataChain.WebApplication.Controllers
         #endregion
 
         #region constructs
-        public MainController(IUnitOfWork _work)
-        {
-            work = _work;
-            log = LogManager.GetCurrentClassLogger(typeof(MainController));
-            connector = new ChainConnector();
-        }
 
         public MainController()
         {
             work = new UnitOfWork();
-            log = LogManager.GetCurrentClassLogger(typeof(MainController));
+            log = LogManager.GetCurrentClassLogger();
             connector = new ChainConnector();
             
         }
@@ -78,9 +73,10 @@ namespace DataChain.WebApplication.Controllers
                 CreateErrorResponse(HttpStatusCode.Unauthorized,
                     "Key can't be null  ");
             }
-            HexString hexKey = KeyParser(accountKey); 
+            HexString hexKey = KeyParser(accountKey);
 
-            Account account = work.Accounts.GetAccount(hexKey);
+            var rawKey = AccountKeyBuilder.Decode(hexKey.ToByteArray());
+            Account account = work.Accounts.GetAccount(rawKey);
             if (account == null)
             {
                 BadRequest();
@@ -103,13 +99,75 @@ namespace DataChain.WebApplication.Controllers
 
 
         [Route("api/main/globalchain")]
-        public JsonResult<IEnumerable<Block>> GetGlobalChain()
+
+        public async Task<JsonResult<IEnumerable<Block>>> GetGlobalChain()
         {
             var context = HttpContext.Current;
             var stream = new WebSocketBlockStream(context.Request.Url);
-            stream.ProcessRequest(context).Wait();
+            await stream.ProcessRequest(context);
 
             return Json(stream.GlobalChain);
+        }
+
+        [HttpPost]
+        [Route("api/main/newAccount")]
+        public async Task CreateNewAccount()
+        {
+
+            JObject jsonContent = null;
+            try
+            {
+                var body = await this.Request.Content.ReadAsStringAsync();
+                jsonContent = JObject.Parse(body);
+            }
+            catch (JsonReaderException)
+            {
+                CreateErrorResponse(HttpStatusCode.BadRequest, "Reading JSON Exception");
+            }
+
+            
+            if (!(jsonContent["accountKey"] is JValue) && !(jsonContent["login"] is JValue) && !(jsonContent["password"] is JValue))
+            {
+                CreateErrorResponse(HttpStatusCode.BadRequest, "Bad json");
+            }
+
+
+            //var key = KeyParser((string)jsonContent["accountKey"]);
+
+            //Account account = work.Accounts.GetAccount(key);
+            //if (account == null)
+            //{
+            //    BadRequest();
+            //}
+
+            //if ( account.Role != UserRole.Admin)
+            //{
+            //    CreateErrorResponse(HttpStatusCode.Unauthorized, "Need admin permissions ");
+            //}
+            AccountKeyBuilder keyBuilder = new AccountKeyBuilder();
+            var password =(string)jsonContent["password"];
+            Account newAcc;
+            using (var hasher = SHA256.Create())
+            {
+                 newAcc = new Account()
+                {
+                    Key = keyBuilder.CreateAccKey(),
+                    Login = (string)jsonContent["login"],
+                    Password = new HexString(hasher.ComputeHash
+                    (DataProvider.Serializer.ToBinaryArray(password))),
+                    Role = UserRole.Admin
+                };
+            }
+            BinaryFormatter formatter = new BinaryFormatter();
+            MemoryStream stream = new MemoryStream();
+            formatter.Serialize(stream, newAcc);
+            Record record = new Record(1, "New acc "+ newAcc.Login,
+                new HexString(stream.ToArray()), TypeData.Account);
+            var pub_key = new ECKeyValidator().RSA.ToXmlString(false);
+
+            new ECKeyValidator().RSA.PersistKeyInCsp = true;
+            await work.TransactionValidator.ValidateTransaction( record , pub_key);
+           
         }
 
         [HttpPost]
@@ -146,12 +204,6 @@ namespace DataChain.WebApplication.Controllers
                 CreateErrorResponse(HttpStatusCode.NotFound, "Пароль не может быть пустым или равным null.");
             }
             SHA256 hasher = SHA256.Create();
-            var hash_password = hasher.ComputeHash(UTF8Encoding.UTF8.GetBytes(password));
-
-            if (hash_password != hasher.ComputeHash(password.ToHexString()))
-            {
-                CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid password");
-            }
 
             Account user = this.work.Accounts.GetAccount(login);
 
@@ -160,6 +212,14 @@ namespace DataChain.WebApplication.Controllers
                 CreateErrorResponse(HttpStatusCode.Unauthorized, "User not found.");
             }
 
+            var hash_password = hasher.ComputeHash(UTF8Encoding.UTF8.GetBytes(password));
+           
+            if (!hash_password.SequenceEqual(user.Password.ToByteArray()))
+            {
+                CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid password");
+            }
+
+            
             var now = DateTime.UtcNow;
 
             var jwt = new JwtSecurityToken(
@@ -182,8 +242,8 @@ namespace DataChain.WebApplication.Controllers
         }
 
         [HttpGet]
-        [Route("record/{name}")]
-        public JsonResult<Record> GetRecord(string name, string accountKey)
+        [Route("record/{name}/{accountKey}")]
+        public async  Task<object> GetRecord(string name, string accountKey)
         {
 
             HexString hexKey = HexString.Empty;
@@ -213,9 +273,27 @@ namespace DataChain.WebApplication.Controllers
                 CreateErrorResponse(HttpStatusCode.BadRequest, "Name cannot be empty");
             }
            
-            var result = this.work.Records.GetRecordByNameAsync(name);
+            var result = await this.work.Records.GetRecordByNameAsync(name);
+           
+            if (result.TypeRecord == TypeData.Account)
+            {
 
-            return Json(result);
+                Account acc = null;
+
+                BinaryFormatter formatter = new BinaryFormatter();
+                using (MemoryStream stream = new MemoryStream(result.Value.ToByteArray()))
+                {
+                   acc =  formatter.Deserialize(stream) as Account;
+                }
+
+                return JsonConvert.SerializeObject(new { acc.Login, acc.Role, result.Name, result.Version });
+
+            }
+
+            var serializedValue = Encoding.UTF8.GetString(result.Value.ToByteArray());
+
+            return Json(new { result.Name, result.TypeRecord,
+                              result.Version, serializedValue });
 
         }
 
@@ -291,7 +369,7 @@ namespace DataChain.WebApplication.Controllers
 
         }
 
-       
+        [NonAction]
         public async Task<string> RawTransaction( byte[] transactionHash)
         {
             var tx = await this.work.Transactions.GetTransactionAsync(transactionHash);
@@ -300,16 +378,13 @@ namespace DataChain.WebApplication.Controllers
             {
                 CreateErrorResponse(HttpStatusCode.NotFound, "Transaction is not found");
             }
-            var hash = BitConverter.ToString(tx.Hash.ToByteArray());
 
-            var formattedHash = hash.Replace("-", "")
-                                    .ToLower();
 
-            return formattedHash;
+            return GetHashString(tx.Hash.ToByteArray());
         }
-    
 
-        public async Task<JsonResult<Transaction>> JsonTransaction(byte[] transactionHash)
+        [NonAction]
+        public async Task<Transaction> JsonTransaction(byte[] transactionHash)
         {
 
             var tx = await this.work.Transactions.GetTransactionAsync(transactionHash);
@@ -318,15 +393,13 @@ namespace DataChain.WebApplication.Controllers
             {
                 CreateErrorResponse(HttpStatusCode.NotFound, "Transaction is not found");
             }
-
-            var response = new Transaction( tx.TimeStamp, tx.Data, tx.Hash, tx.Sign, tx.PubKey);
-
-            return Json(response);
+           
+            return tx;
         }
 
         [HttpGet]
-        [Route("block/{id}")]
-        public async Task<JsonResult<Block>> GetBlock(int id)
+        [Route("api/main/block/{id}")]
+        public async Task<string> GetBlock(int id)
         {
             var rawBlock = await this.work.Blocks.GetBlock(id);
 
@@ -335,8 +408,18 @@ namespace DataChain.WebApplication.Controllers
                 CreateErrorResponse(HttpStatusCode.NotFound, "Block is not found");
             }
 
-          
-           return Json(rawBlock);
+
+            var formattedHash = GetHashString(rawBlock.Hash.ToByteArray());
+            var prevHash = GetHashString(rawBlock.PreviousHash.ToByteArray());
+            var merkle = GetHashString(rawBlock.MerkleRoot.ToByteArray());
+
+            return JsonConvert.SerializeObject(new {
+                formattedHash,
+                rawBlock.Index,
+                rawBlock.TimeStamp,
+                prevHash,
+                rawBlock.CurrentTransactions
+            });
         }
         #endregion
 
@@ -381,6 +464,11 @@ namespace DataChain.WebApplication.Controllers
             return claimsIdentity;
         }
 
+        private string GetHashString(byte[] hash)
+        {
+            return BitConverter.ToString(hash).Replace("-", "");
+        }
+
         private async Task<object> SendChainFromWebSockets(AspNetWebSocketContext context)
         {
             var handler = new BlockChainHandler();
@@ -388,14 +476,16 @@ namespace DataChain.WebApplication.Controllers
             byte[] buffer = new byte[1024 * 1024];
             ChainSerializer chainSerializer = new ChainSerializer();
 
-            buffer = chainSerializer.Encode(connector.GetLocalChain().BlockChain);
-            ArraySegment<byte> segment = new ArraySegment<byte>(buffer);
+            var encode_tuple = chainSerializer.Encode(connector.GetLocalChain().BlockChain);
+            ArraySegment<byte> segment = 
+                new ArraySegment<byte>(chainSerializer.ConcateByteArray(encode_tuple));
+
             WebSocket socket = context.WebSocket;
 
             try
             {
                 handler.OnOpen();
-                var user = context.User;
+                
                 WebSocketReceiveResult receiveResult;
 
                 while (socket.State == WebSocketState.Open)

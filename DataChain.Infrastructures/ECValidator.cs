@@ -20,40 +20,40 @@ namespace DataChain.Infrastructure
         public bool VerifyMessage( string originalData, string signedDataBase64, string publicKey)
         {
 
-            if(string.IsNullOrEmpty(originalData) || string.IsNullOrEmpty(signedDataBase64) || string.IsNullOrEmpty(publicKey))
+            if(string.IsNullOrEmpty(originalData) || string.IsNullOrEmpty(signedDataBase64))
             {
                 throw new ArgumentNullException();
             }
-
-            bool verified;
-
-            RSA.FromXmlString(publicKey);
-
+            
+            var par =  RSA.ExportParameters(false);
+            RSA.ImportParameters(par);
+            //RSA.FromXmlString(publicKey);
+            
             var originalByteData = Encoding.UTF8.GetBytes(originalData);
             var signedData = Convert.FromBase64String(signedDataBase64);
-           
-            verified = RSA.VerifyData(originalByteData, CryptoConfig.MapNameToOID("SHA256"), signedData);
-            return verified;
+            
+            return RSA.VerifyData(originalByteData, CryptoConfig.MapNameToOID("SHA256"), 
+                signedData);
         }
 
        
 
-        public string SignData(string data, string privateKey)
+        public string SignData(string data)
         {
 
-            if (string.IsNullOrEmpty(data) || string.IsNullOrEmpty(privateKey))
+            if (string.IsNullOrEmpty(data) )
             {
                 throw new ArgumentNullException();
             }
 
-            RSA.FromXmlString(privateKey);
+            var par = RSA.ExportParameters(true);
             
+            RSA.ImportParameters(par);
+
             byte[] byteData = Serializer.ToBinaryArray(data);
             byte[] signedByteData = RSA.SignData(byteData, CryptoConfig.MapNameToOID("SHA256"));
-            
-            var signedData = Convert.ToBase64String(signedByteData);
     
-            return signedData;
+            return Convert.ToBase64String(signedByteData);
         }
 
         public RSACryptoServiceProvider CreateKeys()
@@ -62,10 +62,12 @@ namespace DataChain.Infrastructure
             var privateKey = RSA.ToXmlString(true);
             var path = "/DataChain/privKey/";
             var dirInfo = new DirectoryInfo(path);
+
             if (!dirInfo.Exists)
             {
                 dirInfo.Create();
             }
+
             File.WriteAllText(path+"key.xml", privateKey);
             return RSA;
         }

@@ -7,20 +7,20 @@ namespace DataChain.WebApplication.Models
 {
     public class UnitOfWork : IUnitOfWork
     {
-        private TransactionSubscriber txSubscribe;
-        private RecordSubscriber recSubscribe;
-        private BlockSubscriber blcSubscribe;
+        private TransactionRepository txSubscribe;
+        private RecordRepository recSubscribe;
+        private BlockRepository blcSubscribe;
         private TransactionValidator validator;
-        private AccountSubscriber account;
+        private AccountRepository account;
        
 
-        public ITransactionSubscriber Transactions
+        public ITransactionRepository Transactions
         {
             get
             {
                 if (txSubscribe == null)
-                    txSubscribe = new TransactionSubscriber();
-                return (ITransactionSubscriber)txSubscribe;
+                    txSubscribe = new TransactionRepository();
+                return (ITransactionRepository)txSubscribe;
             }
         }
 
@@ -30,40 +30,40 @@ namespace DataChain.WebApplication.Models
             {
                 if (validator == null)
                 {
-                    validator = new TransactionValidator((TransactionSubscriber)this.Transactions);
+                    validator = new TransactionValidator();
                 }
                 return validator;
             }
         }
 
 
-        public IRecordSubscriber Records
+        public IRecordRepository Records
         { 
              get
              {
                 if (recSubscribe == null)
-                    recSubscribe = new RecordSubscriber();
-                return (IRecordSubscriber) txSubscribe;
+                    recSubscribe = new RecordRepository();
+                return (IRecordRepository) txSubscribe;
              }
         }
 
-        public IBlockSubscriber Blocks
+        public IBlockRepository Blocks
         {
             get
             {
                 if (blcSubscribe == null)
-                    blcSubscribe = new BlockSubscriber();
-                return (IBlockSubscriber)blcSubscribe;
+                    blcSubscribe = new BlockRepository();
+                return (IBlockRepository)blcSubscribe;
             }
         }
 
-        public IAccountSubscriber Accounts
+        public IAccountRepository Accounts
         {
             get
             {
                 if (account == null)
-                    account = new AccountSubscriber();
-                return (IAccountSubscriber)account;
+                    account = new AccountRepository();
+                return (IAccountRepository)account;
             }
         }
 

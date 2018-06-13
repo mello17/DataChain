@@ -3,29 +3,32 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
-using System.Security.Cryptography;
 using DataChain.Abstractions;
 using DataChain.DataProvider;
-
+using DataChain.Abstractions.Interfaces;
 
 namespace DataChain.Infrastructure
 {
     public class ChainSerializer
     {
         private readonly ECKeyValidator key;
-        public byte[] BigEndianData {get; private set;}
+       
+        private ITransactionRepository subscribe;
+        public byte[] BigEndianData { get; private set; }
 
         public ChainSerializer()
         {
             key = new ECKeyValidator();
+            subscribe = new TransactionRepository();
            
         }
 
-        public byte[] Encode(IEnumerable<Block> chain)
+        public Tuple<byte[],byte[]> Encode(IEnumerable<Block> chain)
         {
-           
-            MemoryStream stream = new MemoryStream();
-            stream.Seek(0, SeekOrigin.Begin);
+
+             byte[] bigEndianData;
+             MemoryStream stream = new MemoryStream();
+             stream.Seek(0, SeekOrigin.Begin);
 
             using (BinaryWriter writer = new BinaryWriter(stream))
             {
@@ -36,21 +39,42 @@ namespace DataChain.Infrastructure
                     writer.Write(block.MerkleRoot.ToString());
                     writer.Write(block.PreviousHash.ToString());
                     writer.Write(block.TimeStamp.ToBinary());
+                    writer.Write(block.CurrentTransactions.Count);
+
+                    foreach (var tx in block.CurrentTransactions)
+                    {
+                        writer.Write(tx.Hash.ToString());
+                       
+                    }
+
                     writer.Flush();
                 }
+                bigEndianData = Aes256.Encode(ToBigEndian(stream.ToArray()));
             }
           
-            this.BigEndianData = Aes256.Encode(ToBigEndian(stream.ToArray()));
+           
             var encrypt = key.RSA.Encrypt(Aes256.GetBytes(Aes256.RandomKey), false);
-            return encrypt;
+            
+            return new Tuple<byte[],byte[]>(encrypt, bigEndianData);
         }
        
 
         public IEnumerable<Block> Decode(byte[] data)
         {
 
-            var decryptKey = key.RSA.Decrypt(data, false);
-            var decrypt = Aes256.Decode(this.BigEndianData, Aes256.GetString(decryptKey));
+            byte[] encryptData = new byte[256];
+            byte[] bigEndianData = null;
+            using (MemoryStream rawStream = new MemoryStream(data))
+            {
+                using(BinaryReader reader= new BinaryReader(rawStream))
+                {
+                    encryptData =  reader.ReadBytes(256);
+                    bigEndianData = reader.ReadBytes((int)reader.BaseStream.Length - encryptData.Length);
+                }
+            }
+            
+            var decryptKey = key.RSA.Decrypt(encryptData, false);
+            var decrypt = Aes256.Decode(bigEndianData, Aes256.GetString(decryptKey));
            
             MemoryStream stream = new MemoryStream(decrypt);
             List<Block> blocks = new List<Block>();
@@ -68,13 +92,27 @@ namespace DataChain.Infrastructure
                         blockKeyValuePairs["merkleroot"] = reader.ReadString();
                         blockKeyValuePairs["previousHash"] = reader.ReadString();
                         blockKeyValuePairs["stamp"] = reader.ReadInt64();
+                        blockKeyValuePairs["count"] = reader.ReadInt32();
+
+                        List<Transaction> list = new List<Transaction>();
+                        for (int i = 0; i < (int)blockKeyValuePairs["count"]; i++)
+                        {
+                            blockKeyValuePairs["tx_hash"] = reader.ReadString();
+                            var tx = subscribe.GetTransactionAsync(
+                                HexString.Parse((string)blockKeyValuePairs["tx_hash"])
+                                .ToByteArray()).Result;
+                            list.Add(tx);
+                        }
+                       
 
                         blocks.Add(new Block(HexString.Parse((string)blockKeyValuePairs["hash"]),
                                            HexString.Parse((string)blockKeyValuePairs["previousHash"]),
                                            DateTime.FromBinary((long)blockKeyValuePairs["stamp"]),
                                            (int)blockKeyValuePairs["index"],
                                            HexString.Parse((string)blockKeyValuePairs["merkleroot"]),
-                                           new BlockMetadata()));
+                                           list
+                                          ));
+                       
 
                     }
                 }
@@ -83,11 +121,8 @@ namespace DataChain.Infrastructure
             {
                 
             }
-          
-
             return blocks.AsEnumerable();
         }
-
 
         private byte[] ToBigEndian(byte[] value)
         {
@@ -102,6 +137,23 @@ namespace DataChain.Infrastructure
             }
 
             return temp;
+        }
+
+        public byte[] ConcateByteArray(Tuple<byte[],byte[]> byteTuple)
+        {
+
+            using (MemoryStream stream = new MemoryStream())
+            {
+
+                using (BinaryWriter writer = new BinaryWriter(stream))
+                {
+                    writer.Write(byteTuple.Item1);
+                    writer.Write(byteTuple.Item2);
+                }
+
+
+                return stream.ToArray();
+            }
         }
 
     }

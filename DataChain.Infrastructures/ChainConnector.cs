@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using DataChain.Abstractions;
 using DataChain.DataProvider;
 
 namespace DataChain.Infrastructure
@@ -19,10 +16,8 @@ namespace DataChain.Infrastructure
 
         public void CreateNewBlockChain()
         {
-            BlockSubscribe.Clear();
-            blockChain = new List<Block>();
-            var genesisBlock = Genesis.CreateGenesis();
-            AddBlock(genesisBlock);
+
+            BlockSubscribe.Clear(); 
         }
 
 
@@ -65,8 +60,6 @@ namespace DataChain.Infrastructure
             return null;
         }
 
-       
-
         private void ReplaceLocalChainFromGlobalChain(Chain localChain, Chain globalChain)
         {
             if (globalChain == null || localChain == null)
@@ -81,7 +74,7 @@ namespace DataChain.Infrastructure
             var newBlocks = globalChain.BlockChain.AsEnumerable().Reverse().Take(countNewBlocks).ToList();
             foreach (var block in newBlocks)
             {
-                AddBlock(block);
+                BlockChain.Add(block);
             }
         }
 

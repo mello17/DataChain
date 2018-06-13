@@ -5,9 +5,11 @@ using System.Collections.Generic;
 
 namespace DataChain.Abstractions
 {
+
+    [Serializable]
     public class Transaction
     {
-        public Transaction( DateTime _timestamp, IEnumerable<Record>  _data, HexString _hash, HexString _sign, HexString _pubkey)
+        public Transaction( DateTime _timestamp, IEnumerable<Record>  _data, HexString _hash, HexString _pubkey, HexString _sign)
         {
          
             if(_timestamp == null)

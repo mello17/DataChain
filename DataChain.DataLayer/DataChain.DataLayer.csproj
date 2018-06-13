@@ -50,13 +50,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AccountKey.cs" />
     <Compile Include="Block.cs" />
     <Compile Include="BlockMetadata.cs" />
     <Compile Include="DataType.cs" />
     <Compile Include="HexString.cs" />
     <Compile Include="Interfaces\IAccountSubscriber.cs" />
-    <Compile Include="Interfaces\IBlockSubscriber.cs" />
-    <Compile Include="Interfaces\IRecordSubscriber.cs" />
+    <Compile Include="Interfaces\IBlockRepository.cs" />
+    <Compile Include="Interfaces\IRecordRepository.cs" />
     <Compile Include="Interfaces\ITransactionSubscriber.cs" />
     <Compile Include="Record.cs" />
     <Compile Include="Signature.cs" />

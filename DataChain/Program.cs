@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Configuration;
 using DataChain.WebApplication.Models;
-using System.Web;
 
 
 namespace DataChain
@@ -19,16 +14,10 @@ namespace DataChain
             WebSocketBlockStream stream = 
                 new WebSocketBlockStream(new Uri(ConfigurationSettings.AppSettings["endPoint"]));
             WebSocketServer socketServer = new WebSocketServer();
-            socketServer.Start(ConfigurationSettings.AppSettings["endPoint"]);
+            socketServer.Start(ConfigurationSettings.AppSettings["endPoint"]).Wait();
 
+            Console.ReadKey();
 
-            while (true)
-            {
-                if (HttpContext.Current != null)
-                stream.ProcessRequest(HttpContext.Current);
-            }
-
-          
 
         }
     }

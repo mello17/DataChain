@@ -5,10 +5,10 @@ namespace DataChain.Infrastructure
     public interface IUnitOfWork
     {
 
-        ITransactionSubscriber Transactions { get; }
-        IAccountSubscriber Accounts { get; }
-        IBlockSubscriber Blocks { get; }
-        IRecordSubscriber Records { get; }
+        ITransactionRepository Transactions { get; }
+        IAccountRepository Accounts { get; }
+        IBlockRepository Blocks { get; }
+        IRecordRepository Records { get; }
         ITransactionValidator TransactionValidator { get; }
     }
 }

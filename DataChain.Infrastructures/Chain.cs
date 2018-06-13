@@ -7,9 +7,6 @@ using System.Net.Http;
 using DataChain.Abstractions;
 using DataChain.Abstractions.Interfaces;
 using DataChain.DataProvider;
-using System.Net.Http.Headers;
-using Newtonsoft;
-using System.IO;
 
 namespace DataChain.Infrastructure
 {
@@ -22,8 +19,8 @@ namespace DataChain.Infrastructure
 
         public IEnumerable<Account> Users { get; set; }
         public IEnumerable<string> Hosts { get; set; }
-        public int Length => blockChain.Count;
-        public IBlockSubscriber BlockSubscribe { get; private set; } = new BlockSubscriber();
+        public int Length => BlockChain.Count;
+        public IBlockRepository BlockSubscribe { get; private set; } = new BlockRepository();
        
 
 
@@ -36,7 +33,7 @@ namespace DataChain.Infrastructure
 
             foreach (var block in blocks)
             {
-                var b = new Block(block.Hash, block.PreviousHash, block.TimeStamp, block.Index, block.MerkleRoot, block.Metadata );
+                var b = new Block(block.Hash, block.PreviousHash, block.TimeStamp, block.Index, block.MerkleRoot, block.CurrentTransactions );
                 BlockChain.Add(b);
 
             } 
@@ -50,27 +47,13 @@ namespace DataChain.Infrastructure
                 throw new InvalidBlockException("Блок провайдера данных не может быть равным null.");
             }
 
-            var b = new Block(block.Hash, block.PreviousHash, block.TimeStamp, block.Index, block.MerkleRoot, block.Metadata);
+            var b = new Block(block.Hash, block.PreviousHash, block.TimeStamp, block.Index, block.MerkleRoot, block.CurrentTransactions);
             BlockChain.Add(b);
-
-           
         }
 
         public Chain()
         {
            
-        }
-      
-
-        public void AddBlock(Block block)
-        {
-           
-            if (blockChain.Any(b => b.Hash == block.Hash))
-            {
-                return;
-            }
-
-            blockChain.Add(block);
         }
 
       
@@ -78,15 +61,23 @@ namespace DataChain.Infrastructure
         /// Проверить корректность цепочки блоков.
         /// </summary>
         /// <returns> Корректность цепочки блоков. true - цепочка блоков корректна, false - цепочка некорректна. </returns>
-        public bool CheckCorrect()
+        public bool CheckCorrect(Block newBlock)
         {
 
-            new Chain( BlockSubscribe.GetBlocks().ToList());
-            for (int i = 0; i <= blockChain.Count; i += 2)
+            Chain chain = new Chain( BlockSubscribe.GetBlocks().ToList());
+
+            if (chain.BlockChain.Any(b => b.Hash == newBlock.Hash))
             {
-                if (i + 1 < blockChain.Count)
+                return false;
+            }
+
+            chain.BlockChain.Add(newBlock);
+            
+            for (int i = 0; i <= chain.BlockChain.Count; i += 2)
+            {
+                if (i + 1 < chain.BlockChain.Count)
                 {
-                    if(blockChain[i].PreviousHash != blockChain[i + 1].Hash)
+                    if(!chain.BlockChain[i + 1].PreviousHash.Equals(chain.BlockChain[i].Hash))
                     {
                         return false;
                     }
@@ -96,13 +87,11 @@ namespace DataChain.Infrastructure
             return true;
         }
 
-       
-
         /// <summary>
         /// Получить данные из локальной цепочки.
         /// </summary>
         /// <param name="localChain"> Локальная цепочка блоков. </param>
-        public void LoadDataFromLocalChain(Chain localChain)
+        protected void LoadDataFromLocalChain(Chain localChain)
         {
             if (localChain == null)
             {
@@ -111,7 +100,7 @@ namespace DataChain.Infrastructure
 
             foreach (var block in localChain.blockChain)
             {
-                blockChain.Add(block);
+                BlockChain.Add(block);
                 
 
             }

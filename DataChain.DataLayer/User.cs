@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DataChain.Abstractions;
 
 namespace DataChain.Abstractions
 {
+    [Serializable]
     public class Account
     {
         
         public string Login { get;  set; }
         public HexString Password { get;  set; }
-        public HexString Key { get; set; }
+        public AccountKey Key { get; set; }
         public UserRole Role { get; set; }
        
 

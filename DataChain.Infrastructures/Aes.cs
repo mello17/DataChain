@@ -50,7 +50,8 @@ namespace DataChain.Infrastructure
 
             RijndaelManaged symmetricKey = new RijndaelManaged();
             symmetricKey.Mode = CipherMode.CBC;
-           
+            
+
             ICryptoTransform encryptor = symmetricKey.CreateEncryptor(
                                                              keyBytes,
                                                              initVectorBytes);
@@ -70,12 +71,13 @@ namespace DataChain.Infrastructure
 
         }
 
-        public static byte[] Decode(byte[] byteValue, string randomKey)
+        public static byte[] Decode(byte[] byteData, string randomKey)
         {
 
             RijndaelManaged symmetricKey = new RijndaelManaged();
             
             symmetricKey.Mode = CipherMode.CBC;
+           
 
             byte[] keyBytes = GetBytes(randomKey);
             ICryptoTransform decryptor = symmetricKey.CreateDecryptor(
@@ -83,18 +85,19 @@ namespace DataChain.Infrastructure
                                                              initVectorBytes);
             byte[] valueBytes;
 
-            using (MemoryStream memStream = new MemoryStream(byteValue))
-            {
-                using (CryptoStream cryptoStream = new CryptoStream(memStream, decryptor, CryptoStreamMode.Read))
-                {
-                    valueBytes = new byte[byteValue.Length];
+            MemoryStream memStream = new MemoryStream(byteData);
+
+
+               CryptoStream cryptoStream = new CryptoStream(memStream, decryptor, CryptoStreamMode.Read);
+                
+                    valueBytes = new byte[(byteData.Length)];
 
                     int decryptedByteCount = cryptoStream.Read(
                                                             valueBytes,
                                                             0,
                                                             valueBytes.Length);
-                }
-            }
+                
+            
 
             return valueBytes;
         }

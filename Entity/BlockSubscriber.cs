@@ -10,11 +10,11 @@ using System.Data.Entity.Validation;
 
 namespace DataChain.DataProvider
 {
-   public class BlockSubscriber : IBlockSubscriber
+   public class BlockRepository : IBlockRepository
     {
         private readonly DatachainContext database;
 
-        public BlockSubscriber()
+        public BlockRepository()
         {
             database = new DatachainContext();
         }
@@ -38,10 +38,12 @@ namespace DataChain.DataProvider
             return await Task.FromResult(response);
         }
 
+        
+
         public List<Block> GetBlocks()
         {
             var list = new List<Block>();
-            foreach(var block in database.Blocks.ToList())
+            foreach(var block in database.Blocks)
             {
                 list.Add(Serializer.DeserializeBlock(block));
             }

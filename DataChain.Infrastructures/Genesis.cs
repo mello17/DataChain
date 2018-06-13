@@ -21,7 +21,10 @@ namespace DataChain.Infrastructure
         public static Block CreateGenesis()
         {
 
-            GenesisBlock = new Block(new HexString(HexString.Parse("00").ToByteArray()), new HexString(HexString.Parse("00").ToByteArray()), DateTime.UtcNow, 1, new HexString(HexString.Parse("00").ToByteArray()));
+            List<Transaction> list = new List<Transaction>();
+            GenesisBlock = new Block(new HexString(HexString.Parse("00").ToByteArray()), 
+                new HexString(HexString.Parse("00").ToByteArray()), 
+                DateTime.UtcNow, 1, new HexString(HexString.Parse("00").ToByteArray()), list);
 
             string jsondata = JsonConvert.SerializeObject(GenesisBlock);
             string path = "/DataChain/Genesis/";

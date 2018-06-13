@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using DataChain.Abstractions;
 using DataChain.Abstractions.Interfaces;
 
 namespace DataChain.DataProvider
 {
-    public class RecordSubscriber : IRecordSubscriber
+    public class RecordRepository : IRecordRepository
     {
         private DatachainContext db = new DatachainContext();
 
@@ -28,7 +27,7 @@ namespace DataChain.DataProvider
         }
 
         
-        public Record  GetRecordByNameAsync(string name)
+        public async Task<Record>  GetRecordByNameAsync(string name)
         {
            var records = db.Records.Where(b => b.Name == name);
            List<Record> records_list = new List<Record>();
@@ -38,7 +37,7 @@ namespace DataChain.DataProvider
                 records_list.Add(Serializer.DeserializeRecord(record));
            }
 
-            return records_list.SingleOrDefault();
+            return await Task.FromResult(records_list.SingleOrDefault());
         }
 
         public async Task AddRecordsAsync(IEnumerable<Record> records)

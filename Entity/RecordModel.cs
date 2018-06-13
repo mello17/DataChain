@@ -28,5 +28,7 @@ namespace DataChain.DataProvider
         public int? TransactionId { get; set; }
         public virtual TransactionModel TransactionModel { get; set; }
 
+
+
     }
 }

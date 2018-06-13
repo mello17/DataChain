@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 
 namespace DataChain.Abstractions.Interfaces
 {
-   public  interface IRecordSubscriber
+   public  interface IRecordRepository
     {
         IReadOnlyList<Record> GetRecords(string recordName, TypeData type);
-        Record GetRecordByNameAsync(string name);
+        Task<Record> GetRecordByNameAsync(string name);
         Task AddRecordsAsync(IEnumerable<Record> records);
     }
 }

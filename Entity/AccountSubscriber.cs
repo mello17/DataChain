@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using DataChain.Abstractions;
 using DataChain.Abstractions.Interfaces;
 
 namespace DataChain.DataProvider
 {
-    public class AccountSubscriber : IAccountSubscriber
+    public class AccountRepository : IAccountRepository
     {
         private DatachainContext db = new DatachainContext();
 
@@ -30,7 +28,6 @@ namespace DataChain.DataProvider
         public Account GetAccount(HexString token)  
         {
 
-            
             AccountModel model = null;
             try
             {
@@ -57,7 +54,11 @@ namespace DataChain.DataProvider
 
         public void AddUser(Account user)
         {
-            throw new NotImplementedException();
+
+            var serializedAccount = Serializer.SerializeAccount(user);
+
+            db.Accounts.Add(serializedAccount);
+            db.SaveChanges();
         }
 
        

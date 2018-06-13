@@ -13,6 +13,7 @@ using DataChain.WebApplication.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace DataChain.Tests
 {
@@ -24,9 +25,7 @@ namespace DataChain.Tests
     {
         public UnitTest()
         {
-            //
-            // TODO: добавьте здесь логику конструктора
-            //
+         
         }
 
         private TestContext testContextInstance;
@@ -53,15 +52,13 @@ namespace DataChain.Tests
         public List<Transaction> InitTransactions()
         {
             byte[] data = new HexString(HexString.Parse("abc21321412123131312").ToByteArray()).ToByteArray();
-            byte[] data2 = new HexString(HexString.Parse("f213412431313131").ToByteArray()).ToByteArray();
+            byte[] data2 = new HexString(HexString.Parse("f2134124313323213131").ToByteArray()).ToByteArray();
             Record record = new Record(1, "Peace!!!!", new HexString(data), TypeData.Host);
             Transaction tx = new Transaction(DateTime.UtcNow, new List<Record> { record }, new HexString(Serializer.ComputeHash(data)), HexString.Empty, HexString.Empty);
             Transaction tx2 = new Transaction(DateTime.UtcNow, new List<Record> { record }, new HexString(Serializer.ComputeHash(data2)), HexString.Empty, HexString.Empty);
-            Transaction tx3 = new Transaction(DateTime.UtcNow, new List<Record> { record }, new HexString(Serializer.ComputeHash(data2)), HexString.Empty, HexString.Empty);
-            Transaction tx4 = new Transaction(DateTime.UtcNow, new List<Record> { record }, new HexString(Serializer.ComputeHash(data2)), HexString.Empty, HexString.Empty);
-            Transaction tx5 = new Transaction(DateTime.UtcNow, new List<Record> { record }, new HexString(Serializer.ComputeHash(data2)), HexString.Empty, HexString.Empty);
+           
 
-            return new List<Transaction> { tx, tx2, tx3, tx4, tx5 };
+            return new List<Transaction> { tx, tx2 };
         }
         #endregion
 
@@ -76,7 +73,7 @@ namespace DataChain.Tests
             {
                 CurrentTransactions = new List<Transaction>(InitTransactions()) ,
                 Instance = 1,
-                TransactionCount = 5
+                TransactionCount = 2
 
             };
 
@@ -89,11 +86,11 @@ namespace DataChain.Tests
         public void TestSign()
         {
             byte[] data = HexString.Parse("abc21321412123131312").ToByteArray();
-            byte[] str  = UTF8Encoding.UTF8.GetBytes("abc21321412123131312");
+            
             RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048);
             string privKey = rsa.ToXmlString(true);
             
-            Assert.IsNotNull(new ECKeyValidator().SignData(data.ToString(), privKey));
+            Assert.IsNotNull(new ECKeyValidator().SignData(data.ToString()));
 
         }
 
@@ -114,7 +111,7 @@ namespace DataChain.Tests
             string plainText = "originalMessage";
             // string tamperMessage = "origiinalMessage";
 
-            string signedMessage = key.SignData( plainText,privateKey);
+            string signedMessage = key.SignData( plainText);
 
             Assert.IsTrue(key.VerifyMessage(plainText, signedMessage, publicKey));
 
@@ -125,104 +122,129 @@ namespace DataChain.Tests
         {
 
             ChainConnector connector = new ChainConnector();
-            var correct = connector.CheckCorrect();
+            Record record = new Record(5, "ds", new HexString("323".ToHexString()), TypeData.Host);
+            byte[] data2 = new HexString(HexString.Parse("f2134124313323213131").ToByteArray()).ToByteArray();
+            Transaction tx2 = new Transaction(DateTime.UtcNow, new List<Record> { record }, new HexString(Serializer.ComputeHash(data2)), HexString.Empty, HexString.Empty);
+            BlockBuilder builder = new BlockBuilder(new BlockRepository(), 
+                new TransactionRepository());
+            var block = builder.GenerateBlock(new List<Transaction>(){ tx2 });
+            var correct = connector.CheckCorrect(block);
 
             Assert.IsTrue(correct);
         }
 
         [TestMethod]
-        public  void TestAuthorize()
+        public void TestGetBlocks()
         {
-
-            UnitOfWork work = new UnitOfWork();
-            var controller = new MainController(work);
-            Account user = new Account() {Login = "good", Password = new HexString(UTF8Encoding.UTF8.GetBytes("badaps1")) };
-            //user.AddUser(user);
-
-            var str = controller.Authentication().Result;
-            Assert.Fail();
+            BlockRepository repository = new BlockRepository();
+            var blocks = repository.GetBlocks();
         }
+
 
         [TestMethod]
         public void TestGetLastTx()
         {
-            TransactionSubscriber subscriber = new TransactionSubscriber();
+            TransactionRepository subscriber = new TransactionRepository();
             var txs = subscriber.GetLastTransactionAsync();
 
-            Assert.AreEqual(5,txs.Count);
+            Assert.AreEqual(3,txs.Count);
         }
 
         [TestMethod]
         public  void TestCommitBlock()
         {
-            BlockSubscriber subscriber = new BlockSubscriber();
-            BlockBuilder builder = new BlockBuilder(subscriber, new TransactionSubscriber());
+            BlockRepository subscriber = new BlockRepository();
+            BlockBuilder builder = new BlockBuilder(subscriber, new TransactionRepository());
             
-            var block = subscriber.GetBlock(1).Result;
+            var block = subscriber.GetBlock(62).Result;
 
-
-             builder.CommitBlock(block).Wait();
+            builder.CommitBlock(block).Wait();
             Assert.IsNotNull(block);
+        }
+
+        [TestMethod]
+        public void TestLastTransaction()
+        {
+            TransactionRepository subscriber = new TransactionRepository();
+            var list = subscriber.GetLastTransactionAsync();
         }
 
         [TestMethod]
         public  void TestAddingTransactions()
         {
-           // var genesis = Genesis.CreateGenesis();
            
-            ITransactionSubscriber transactionSubscriber = new TransactionSubscriber();
-             transactionSubscriber.AddTransactionAsync(InitTransactions());
+            ITransactionRepository transactionSubscriber = new TransactionRepository();
+             transactionSubscriber.AddTransactionAsync(InitTransactions()).Wait();
 
         }
 
         [TestMethod]
         public async Task TestGetTx()
         {
-            ITransactionSubscriber transactionSubscriber = new TransactionSubscriber();
+            ITransactionRepository transactionSubscriber = new TransactionRepository();
             var tx = await transactionSubscriber.GetTransactionAsync(5);
 
-            Assert.IsNotNull(tx);
+            Assert.IsNull(tx);
 
         }
 
         [TestMethod]
         public void TestValidateTransactions()
         {
-            TransactionSubscriber transactionSubscriber = new TransactionSubscriber();
-            TransactionValidator validator = new TransactionValidator(transactionSubscriber);
+           
+            TransactionValidator validator = new TransactionValidator();
             string dataString = "String";
             byte[] data = Serializer.ToHexString(dataString);
             var message = "Peace!!!!";
+            AccountKeyBuilder keyBuilder = new AccountKeyBuilder();
+            Account newAcc;
+            using (var hasher = SHA256.Create())
+            {
+                newAcc = new Account()
+                {
+                    Key = keyBuilder.CreateAccKey(),
+                    Login = message,
+                    Password = new HexString(hasher.ComputeHash
+                   (Serializer.ToBinaryArray("212121"))),
+                    Role = UserRole.Admin
+                };
+            }
+            BinaryFormatter formatter = new BinaryFormatter();
+            MemoryStream stream = new MemoryStream();
+            formatter.Serialize(stream, newAcc);
+            Record record = new Record(1, "New acc " + newAcc.Login,
+                new HexString(stream.ToArray()), TypeData.Account);
+           
             Record records = new Record(1, message, new HexString(data), TypeData.Host);
             
             var jArray = JArray.FromObject( new List<Record>(){ records });
-            string privkey = new ECKeyValidator().CreateKeys().ToXmlString(true);
-            string pubkey =new ECKeyValidator().CreateKeys().ToXmlString(false);
-            new ECKeyValidator().SignData(message, privkey);
-            validator.ValidateTransaction(jArray, pubkey).Wait();
+           // string privkey = new ECKeyValidator().CreateKeys().ToXmlString(true);
+            string pubkey =new ECKeyValidator().RSA.ToXmlString(false);
+            
+            validator.ValidateTransaction(record, pubkey).Wait();
             
         }
 
         [TestMethod]
         public void TestCreateBlock()
         {
-            BlockSubscriber subscriber = new BlockSubscriber();
+            BlockRepository subscriber = new BlockRepository();
 
-            BlockBuilder builder = new BlockBuilder(subscriber, new TransactionSubscriber());
-           // var genesis = Genesis.CreateGenesis();
-            
-           // 
+            BlockBuilder builder = new BlockBuilder(subscriber, new TransactionRepository());
+          
              var block =  builder.GenerateBlock(InitTransactions());
-            // builder.AddBlock(block);
+            
             Assert.IsNotNull(block);
         }
 
         [TestMethod]
         public void TestGetBlock()
         {
-            IBlockSubscriber subscriber = new BlockSubscriber();
+            IBlockRepository subscriber = new BlockRepository();
 
             IEnumerable<Block> blocks =  subscriber.GetBlocks();
+
+            Assert.IsNotNull(blocks);
         }
 
         [TestMethod]
@@ -231,11 +253,11 @@ namespace DataChain.Tests
             ECKeyValidator keyValidator = new ECKeyValidator();
             var priv_key = keyValidator.RSA.ToXmlString(true);
             var pub_key = keyValidator.RSA.ToXmlString(false);
-            var sign = keyValidator.SignData("messadhgdhdhh", priv_key);
+            var sign = keyValidator.SignData("messadhgdhdhh");
             SignatureEvidence rawSign = new SignatureEvidence(new HexString(Serializer.ToBinaryArray(sign)),
                 new HexString(Serializer.ToBinaryArray(pub_key)));
-            ITransactionSubscriber subscr = new TransactionSubscriber();
-            TransactionValidator validator = new TransactionValidator(subscr);
+            ITransactionRepository subscr = new TransactionRepository();
+            TransactionValidator validator = new TransactionValidator();
             var byteSign = validator.SerializeSignature(rawSign);
 
             byte[] bytePrivKey = null, bytePubKey = null;
@@ -253,35 +275,54 @@ namespace DataChain.Tests
             var priv = Serializer.ToBinaryArray(sign);
            
             Assert.ReferenceEquals(pub, bytePubKey);
-
         }
 
         [TestMethod]
         public void TestChainEncode()
         {
-            IBlockSubscriber subscriber = new BlockSubscriber();
+            IBlockRepository subscriber = new BlockRepository();
             var blocks =  subscriber.GetBlocks();
             
             Chain chain = new Chain(blocks);
 
             ChainSerializer serializer = new ChainSerializer();
             var encrypt = serializer.Encode(chain.BlockChain);
-            var decrypt = serializer.Decode(encrypt);
+            var decrypt = serializer.Decode(serializer.ConcateByteArray(encrypt));
 
-            Assert.IsNotNull(serializer.Encode(chain.BlockChain));
+            Assert.AreEqual(((List<Block>)decrypt).Count, chain.BlockChain.Count);
         }
 
         [TestMethod]
         public void TestGenesisEncode()
         {
+
             Chain chain = new Chain(Genesis.CreateGenesis());
 
             ChainSerializer serializer = new ChainSerializer();
 
             var encrypt = serializer.Encode(chain.BlockChain);
-            var decrypt = serializer.Decode(encrypt);
+            var decrypt = serializer.Decode(serializer.ConcateByteArray(encrypt));
 
+            Assert.AreEqual(((List<Block>)decrypt).Count, chain.BlockChain.Count);
+        }
 
+        [TestMethod]
+        public void TestSerializeTx()
+        {
+            Record record = new Record(1, "3242", new HexString("http://localhost:8080/".ToHexString()), TypeData.Host);
+            Transaction transaction = new Transaction(DateTime.UtcNow, new[] { record },
+               new HexString(Serializer.ConcatenateData(new[] { "http://localhost:8080/", "123" }).ToHexString()),
+               new HexString(new ECKeyValidator().RSA.ToXmlString(false).ToHexString()),
+               new HexString(new ECKeyValidator().SignData("http://localhost:8080/").ToHexString()));
+
+            var model = Serializer.SerializeTransaction(transaction);
+            var result_tx = Serializer.DeserializeTransaction(model);
+
+            Assert.IsTrue(transaction.Hash.Equals(result_tx.Hash));
+            Assert.IsTrue(transaction.PubKey.Equals( result_tx.PubKey));
+            Assert.IsTrue(transaction.Sign.Equals( result_tx.Sign));
+            Assert.AreEqual(transaction.TimeStamp,  result_tx.TimeStamp);
+           // Assert.AreEqual(transaction.Data, result_tx.Data);
 
         }
     }

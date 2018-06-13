@@ -10,8 +10,6 @@ namespace DataChain.DataProvider
 {
    public static class Serializer
     {
-        
-        
 
         public static byte[] ToHexString(this string rawString)
         {
@@ -35,26 +33,45 @@ namespace DataChain.DataProvider
        
         public static Account DeserializeAccount(AccountModel model)
         {
-            return new Account();
+           return new Account()
+            {
+                Key =new AccountKey(new HexString(model.Key)),
+                Login = model.Login,
+                Password = new HexString(model.Password),
+                Role = model.Role,
+            };
+
         }
 
         public static Transaction DeserializeTransaction(TransactionModel model)
         {
-            return new Transaction(
-                model.Timestamp,
-                RecordsMapping((IList<RecordModel>)model.Records),
-                new HexString(model.TransactionHash), 
-                new HexString(model.Signature),
-                new HexString(model.PubKey));
+            return new Transaction
+            {
+                Instance = model.Id,
+                TimeStamp = model.Timestamp,
+                Data = RecordsMapping((IList<RecordModel>)model.Records),
+                Hash = new HexString(model.TransactionHash),
+                Sign = new HexString(model.Signature),
+                PubKey = new HexString(model.PubKey)
+            };
         }
+      
+        
 
         public static TransactionModel SerializeTransaction(Transaction transaction)
         {
-            var list = transaction.Data.Select(s => s.Value.ToString()).ToList();
+            var list = new List<string>();
+            list = transaction.Data.Select(s => s.Value.ToString()).ToList();
+
+            if(list.Count == 0)
+            {
+                list.Add("");
+            }
 
             var result = ConcatenateData(list);
             return new TransactionModel()
             {
+                Id = transaction.Instance,
                 PubKey = transaction.PubKey.ToByteArray(),
                 Signature = transaction.Sign.ToByteArray(),
                 RawData = result.ToHexString(),
@@ -70,12 +87,21 @@ namespace DataChain.DataProvider
            
         }
 
+        public static AccountModel SerializeAccount(Account account)
+        {
+            return new AccountModel()
+            {
+                Key = account.Key.Key.ToByteArray(),
+                Login = account.Login,
+                Password = account.Password.ToByteArray(),
+                Role = account.Role
+            };
+        }
+
         public static BlockModel SerializeBlock(Block rawBlock)
         {
             List<TransactionModel> tx_list = new List<TransactionModel>();
-
-            foreach(var tx in rawBlock.Metadata.CurrentTransactions)
-             tx_list.Add(SerializeTransaction(tx));
+            
 
             return new BlockModel()
             {
@@ -83,7 +109,7 @@ namespace DataChain.DataProvider
                 PreviousHash = rawBlock.PreviousHash.ToByteArray(),
                 Timestamp = rawBlock.TimeStamp,
                 MerkleRoot = rawBlock.MerkleRoot.ToByteArray(),
-                Transactions = tx_list
+            //    Transactions = tx_list
             };
         }
 
@@ -104,8 +130,8 @@ namespace DataChain.DataProvider
                              new HexString(model.PreviousHash),
                              model.Timestamp,
                              model.Id,
-                             new HexString(model.MerkleRoot),
-                             ComputeMetadata(TransactionsMapping(model.Transactions))
+                             new HexString(model.MerkleRoot), 
+                             TransactionsMapping(model.Transactions, model.Id).ToList()
                              );
         }
 
@@ -138,23 +164,27 @@ namespace DataChain.DataProvider
         }
 
 
-        private static IEnumerable<Transaction> TransactionsMapping(IEnumerable<TransactionModel> model)
+        public static IEnumerable<Transaction> TransactionsMapping(IEnumerable<TransactionModel> model, int id)
         {
+            
             return model.SelectMany(tx =>
             {
                 IList<Transaction> rec = new List<Transaction>();
 
-                for (int i = 0; i <= model.Count(); i++)
-                {
-                    rec.Add(new Transaction()
+                
+               
+                    if (id == tx.BlockModelId)
                     {
-                        Instance = tx.Id,
-                        Data = RecordsMapping(tx.Records.ToList()),
-                        Hash = new HexString(tx.TransactionHash),
-                        Sign = new HexString(tx.Signature),
-                        TimeStamp = tx.Timestamp,
-                    });
-                }
+                        rec.Add(new Transaction()
+                        {
+                            Instance = tx.Id,
+                            Data = RecordsMapping(tx.Records.ToList()),
+                            Hash = new HexString(tx.TransactionHash),
+                            Sign = new HexString(tx.Signature),
+                            TimeStamp = tx.Timestamp,
+                        });
+                    }
+                
                 return rec;
             });
         }

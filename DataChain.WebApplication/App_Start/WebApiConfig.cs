@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Formatting;
+using System.Net.Http.Headers;
 using System.Web.Http;
 
 namespace DataChain.WebApplication
@@ -9,9 +11,8 @@ namespace DataChain.WebApplication
     {
         public static void Register(HttpConfiguration config)
         {
-            // Конфигурация и службы веб-API
 
-            // Маршруты веб-API
+
             config.MapHttpAttributeRoutes();
 
             config.Routes.MapHttpRoute(
@@ -19,6 +20,9 @@ namespace DataChain.WebApplication
                 routeTemplate: "api/{controller}/{id}",
                 defaults: new { id = RouteParameter.Optional }
             );
+
+            config.Formatters.JsonFormatter.MediaTypeMappings.Add(
+                new QueryStringMapping("type", "json", new MediaTypeHeaderValue("application/json")));
         }
     }
 }

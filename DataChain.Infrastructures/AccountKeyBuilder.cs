@@ -1,24 +1,17 @@
-﻿using DataChain.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using DataChain.Abstractions;
 
 namespace DataChain.Infrastructure
 {
-    public  class AccountKey
+    public  class AccountKeyBuilder
     {
-        private readonly HexString key;
+        
         private static readonly ECKeyValidator eckey;
 
-        public AccountKey(HexString _key)
-        {
-            key = _key;
-        }
-
-        static AccountKey()
+        static AccountKeyBuilder()
         {
             eckey = new ECKeyValidator();
         }
