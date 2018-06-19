@@ -105,7 +105,8 @@ namespace DataChain.WebApplication.Controllers
             var context = HttpContext.Current;
             var stream = new WebSocketBlockStream(context.Request.Url);
             await stream.ProcessRequest(context);
-
+            connector.ChainReplace(connector.GetLocalChain(),
+                new Chain(stream.GlobalChain.ToList()));
             return Json(stream.GlobalChain);
         }
 
